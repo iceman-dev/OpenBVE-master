@@ -1,5 +1,6 @@
 ﻿using System;
 using OpenBveApi.Colors;
+using OpenBveApi.Geometry;
 using OpenBveApi.Runtime;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
@@ -504,7 +505,7 @@ namespace OpenBve
             int r = (int)ObjectManager.Objects[Face.ObjectIndex].Mesh.Faces[Face.FaceIndex].Material;
             RenderFace(ref ObjectManager.Objects[Face.ObjectIndex].Mesh.Materials[r], ObjectManager.Objects[Face.ObjectIndex].Mesh.Vertices, Face.Wrap, ref ObjectManager.Objects[Face.ObjectIndex].Mesh.Faces[Face.FaceIndex], CameraX, CameraY, CameraZ);
         }
-        private static void RenderFace(ref World.MeshMaterial Material, World.Vertex[] Vertices, Textures.OpenGlTextureWrapMode wrap, ref World.MeshFace Face, double CameraX, double CameraY, double CameraZ)
+        private static void RenderFace(ref World.MeshMaterial Material, Vertex[] Vertices, Textures.OpenGlTextureWrapMode wrap, ref World.MeshFace Face, double CameraX, double CameraY, double CameraZ)
         {
             // texture
             if (Material.DaytimeTexture != null)
@@ -903,7 +904,7 @@ namespace OpenBve
         }
 
         // get distance factor
-        private static double GetDistanceFactor(World.Vertex[] Vertices, ref World.MeshFace Face, ushort GlowAttenuationData, double CameraX, double CameraY, double CameraZ)
+        private static double GetDistanceFactor(Vertex[] Vertices, ref World.MeshFace Face, ushort GlowAttenuationData, double CameraX, double CameraY, double CameraZ)
         {
             if (Face.Vertices.Length == 0)
             {

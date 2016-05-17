@@ -3,36 +3,14 @@
 
 using System;
 using OpenBveApi.Colors;
+using OpenBveApi.Geometry;
 using OpenBveApi.Math;
 using Vector2 = OpenBveApi.Math.Vector2;
 
 namespace OpenBve {
 	internal static class World {
 		// vertices
-		/// <summary>Represents a vertex consisting of 3D coordinates and 2D texture coordinates.</summary>
-		internal struct Vertex {
-			internal Vector3 Coordinates;
-			internal Vector2 TextureCoordinates;
-			internal Vertex(double X, double Y, double Z) {
-				this.Coordinates = new Vector3(X, Y, Z);
-				this.TextureCoordinates = new Vector2(0.0f, 0.0f);
-			}
-			internal Vertex(Vector3 Coordinates, Vector2 TextureCoordinates) {
-				this.Coordinates = Coordinates;
-				this.TextureCoordinates = TextureCoordinates;
-			}
-			// operators
-			public static bool operator ==(Vertex A, Vertex B) {
-				if (A.Coordinates.X != B.Coordinates.X | A.Coordinates.Y != B.Coordinates.Y | A.Coordinates.Z != B.Coordinates.Z) return false;
-				if (A.TextureCoordinates.X != B.TextureCoordinates.X | A.TextureCoordinates.Y != B.TextureCoordinates.Y) return false;
-				return true;
-			}
-			public static bool operator !=(Vertex A, Vertex B) {
-				if (A.Coordinates.X != B.Coordinates.X | A.Coordinates.Y != B.Coordinates.Y | A.Coordinates.Z != B.Coordinates.Z) return true;
-				if (A.TextureCoordinates.X != B.TextureCoordinates.X | A.TextureCoordinates.Y != B.TextureCoordinates.Y) return true;
-				return false;
-			}
-		}
+		
 
 		// mesh material
 		/// <summary>Represents material properties.</summary>

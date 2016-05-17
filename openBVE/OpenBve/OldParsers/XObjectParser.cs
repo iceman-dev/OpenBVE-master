@@ -3,6 +3,7 @@ using System.IO;
 using System.IO.Compression;
 
 using OpenBveApi.Colors;
+using OpenBveApi.Geometry;
 using OpenBveApi.Math;
 
 namespace OpenBve {
@@ -1036,7 +1037,7 @@ namespace OpenBve {
 			Object = new ObjectManager.StaticObject();
 			Object.Mesh.Faces = new World.MeshFace[] { };
 			Object.Mesh.Materials = new World.MeshMaterial[] { };
-			Object.Mesh.Vertices = new World.Vertex[] { };
+			Object.Mesh.Vertices = new Vertex[] { };
 			// file
 			for (int i = 0; i < Structure.Data.Length; i++) {
 				Structure f = Structure.Data[i] as Structure;
@@ -1085,7 +1086,7 @@ namespace OpenBve {
 								return false;
 							}
 							// collect vertices
-							World.Vertex[] Vertices = new World.Vertex[nVertices];
+							Vertex[] Vertices = new Vertex[nVertices];
 							for (int j = 0; j < nVertices; j++) {
 								if (vertices[j].Name != "Vector") {
 									Interface.AddMessage(Interface.MessageType.Error, false, "vertices[" + j.ToString(Culture) + "] is expected to be of template Vertex in Mesh in x object file " + FileName);
@@ -1561,7 +1562,7 @@ namespace OpenBve {
 							int mv = Object.Mesh.Vertices.Length;
 							Array.Resize<World.MeshFace>(ref Object.Mesh.Faces, mf + nFaces);
 							Array.Resize<World.MeshMaterial>(ref Object.Mesh.Materials, mm + Materials.Length);
-							Array.Resize<World.Vertex>(ref Object.Mesh.Vertices, mv + Vertices.Length);
+							Array.Resize<Vertex>(ref Object.Mesh.Vertices, mv + Vertices.Length);
 							for (int j = 0; j < Materials.Length; j++) {
 								bool emissive = Materials[j].emissiveColor.R != 0 | Materials[j].emissiveColor.G != 0 | Materials[j].emissiveColor.B != 0;
 								bool transparent;

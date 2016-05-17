@@ -1,5 +1,6 @@
 ﻿using System;
 using CSScriptLibrary;
+using OpenBveApi.Geometry;
 using OpenBveApi.Math;
 
 namespace OpenBve {
@@ -207,7 +208,7 @@ namespace OpenBve {
 			int t = StateIndex;
 			if (t >= 0 && Object.States[t].Object != null) {
 				int m = Object.States[t].Object.Mesh.Vertices.Length;
-				ObjectManager.Objects[i].Mesh.Vertices = new World.Vertex[m];
+				ObjectManager.Objects[i].Mesh.Vertices = new Vertex[m];
 				for (int k = 0; k < m; k++) {
 					ObjectManager.Objects[i].Mesh.Vertices[k] = Object.States[t].Object.Mesh.Vertices[k];
 				}
@@ -228,7 +229,7 @@ namespace OpenBve {
 				ObjectManager.Objects[i] = new StaticObject();
 				ObjectManager.Objects[i].Mesh.Faces = new World.MeshFace[] { };
 				ObjectManager.Objects[i].Mesh.Materials = new World.MeshMaterial[] { };
-				ObjectManager.Objects[i].Mesh.Vertices = new World.Vertex[] { };
+				ObjectManager.Objects[i].Mesh.Vertices = new Vertex[] { };
 			}
 			Object.CurrentState = StateIndex;
 			if (Show) {
@@ -859,7 +860,7 @@ namespace OpenBve {
 				        {
 				            Faces = new World.MeshFace[] {},
 				            Materials = new World.MeshMaterial[] {},
-				            Vertices = new World.Vertex[] {}
+				            Vertices = new Vertex[] {}
 				        },
 				        RendererIndex = -1
 				    };
@@ -1489,7 +1490,7 @@ namespace OpenBve {
 			}
 			// finalize arrays
 			if (v != Prototype.Mesh.Vertices.Length) {
-				Array.Resize<World.Vertex>(ref Prototype.Mesh.Vertices, v);
+				Array.Resize<Vertex>(ref Prototype.Mesh.Vertices, v);
 			}
 			if (m != Prototype.Mesh.Materials.Length) {
 				Array.Resize<World.MeshMaterial>(ref Prototype.Mesh.Materials, m);
@@ -1513,7 +1514,7 @@ namespace OpenBve {
 		        int mv = Base.Mesh.Vertices.Length;
 		        Array.Resize<World.MeshFace>(ref Base.Mesh.Faces, mf + Add.Mesh.Faces.Length);
 		        Array.Resize<World.MeshMaterial>(ref Base.Mesh.Materials, mm + Add.Mesh.Materials.Length);
-		        Array.Resize<World.Vertex>(ref Base.Mesh.Vertices, mv + Add.Mesh.Vertices.Length);
+		        Array.Resize<Vertex>(ref Base.Mesh.Vertices, mv + Add.Mesh.Vertices.Length);
 		        for (int i = 0; i < Add.Mesh.Faces.Length; i++) {
 		            Base.Mesh.Faces[mf + i] = Add.Mesh.Faces[i];
 		            for (int j = 0; j < Base.Mesh.Faces[mf + i].Vertices.Length; j++) {
@@ -1583,7 +1584,7 @@ namespace OpenBve {
 		    {
 		        StartingDistance = float.MaxValue,
 		        EndingDistance = float.MinValue,
-		        Mesh = {Vertices = new World.Vertex[Prototype.Mesh.Vertices.Length]}
+		        Mesh = {Vertices = new Vertex[Prototype.Mesh.Vertices.Length]}
 		    };
 		    // vertices
 		    for (int j = 0; j < Prototype.Mesh.Vertices.Length; j++) {
@@ -1672,7 +1673,7 @@ namespace OpenBve {
 		        {
 		            Faces = new World.MeshFace[] {},
 		            Materials = new World.MeshMaterial[] {},
-		            Vertices = new World.Vertex[] {}
+		            Vertices = new Vertex[] {}
 		        },
 		        Dynamic = true
 		    };
@@ -1697,7 +1698,7 @@ namespace OpenBve {
 		        StartingDistance = Prototype.StartingDistance,
 		        EndingDistance = Prototype.EndingDistance,
 		        Dynamic = Prototype.Dynamic,
-		        Mesh = {Vertices = new World.Vertex[Prototype.Mesh.Vertices.Length]}
+		        Mesh = {Vertices = new Vertex[Prototype.Mesh.Vertices.Length]}
 		    };
 		    // vertices
 		    for (int j = 0; j < Prototype.Mesh.Vertices.Length; j++) {
