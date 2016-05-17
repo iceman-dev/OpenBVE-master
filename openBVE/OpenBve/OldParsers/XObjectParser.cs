@@ -5,6 +5,7 @@ using System.IO.Compression;
 using OpenBveApi.Colors;
 using OpenBveApi.Geometry;
 using OpenBveApi.Math;
+using OpenBveApi.Objects;
 
 namespace OpenBve {
 	internal static class XObjectParser {
@@ -1578,7 +1579,7 @@ namespace OpenBve {
 								Object.Mesh.Materials[mm + j].TransparentColor = new Color24(0, 0, 0);
 								Object.Mesh.Materials[mm + j].EmissiveColor = Materials[j].emissiveColor;
 								Object.Mesh.Materials[mm + j].NighttimeTexture = null;
-								Object.Mesh.Materials[mm + j].BlendMode = World.MeshMaterialBlendMode.Normal;
+								Object.Mesh.Materials[mm + j].BlendMode = BlendModes.Normal;
 								Object.Mesh.Materials[mm + j].GlowAttenuationData = 0;
 							}
 							for (int j = 0; j < nFaces; j++) {

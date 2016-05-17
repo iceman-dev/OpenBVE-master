@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using OpenBveApi.Colors;
 using OpenBveApi.Geometry;
+using OpenBveApi.Objects;
 using OpenBveApi.Math;
 
 namespace OpenBve {
@@ -15,7 +17,7 @@ namespace OpenBve {
 			internal bool TransparentColorUsed;
 			internal string DaytimeTexture;
 			internal string NighttimeTexture;
-			internal World.MeshMaterialBlendMode BlendMode;
+			internal BlendModes BlendMode;
 			internal ushort GlowAttenuationData;
 			internal Material() {
 				this.Color = new Color32(255, 255, 255, 255);
@@ -25,7 +27,7 @@ namespace OpenBve {
 				this.TransparentColorUsed = false;
 				this.DaytimeTexture = null;
 				this.NighttimeTexture = null;
-				this.BlendMode = World.MeshMaterialBlendMode.Normal;
+				this.BlendMode = BlendModes.Normal;
 				this.GlowAttenuationData = 0;
 			}
 			internal Material(Material Prototype) {
@@ -646,18 +648,18 @@ namespace OpenBve {
 								if (Arguments.Length > 3) {
 									Interface.AddMessage(Interface.MessageType.Warning, false, "At most 3 arguments are expected in " + Command + " at line " + (i + 1).ToString(Culture) + " in file " + FileName);
 								}
-								World.MeshMaterialBlendMode blendmode = World.MeshMaterialBlendMode.Normal;
+								BlendModes blendmode = BlendModes.Normal;
 								if (Arguments.Length >= 1 && Arguments[0].Length > 0) {
 									switch (Arguments[0].ToLowerInvariant()) {
 										case "normal":
-											blendmode = World.MeshMaterialBlendMode.Normal;
+											blendmode = BlendModes.Normal;
 											break;
 										case "additive":
-											blendmode = World.MeshMaterialBlendMode.Additive;
+											blendmode = BlendModes.Additive;
 											break;
 										default:
 											Interface.AddMessage(Interface.MessageType.Error, false, "The given BlendMode is not supported in " + Command + " at line " + (i + 1).ToString(Culture) + " in file " + FileName);
-											blendmode = World.MeshMaterialBlendMode.Normal;
+											blendmode = BlendModes.Normal;
 											break;
 									}
 								}
@@ -1014,7 +1016,7 @@ namespace OpenBve {
 				}
 			}
 		}
-		
+
 		// apply mesh builder
 		private static void ApplyMeshBuilder(ref ObjectManager.StaticObject Object, MeshBuilder Builder) {
 			if (Builder.Faces.Length != 0) {

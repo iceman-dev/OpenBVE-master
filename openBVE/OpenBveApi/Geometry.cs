@@ -39,5 +39,4 @@ namespace OpenBveApi.Geometry
 			return false;
 		}
 	}
-
 }

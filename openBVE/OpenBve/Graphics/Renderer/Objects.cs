@@ -1,4 +1,5 @@
 ﻿using System;
+using OpenBveApi.Objects;
 
 namespace OpenBve
 {
@@ -112,7 +113,7 @@ namespace OpenBve
 					{
 						alpha = true;
 					}
-					else if (ObjectManager.Objects[ObjectIndex].Mesh.Materials[k].BlendMode == World.MeshMaterialBlendMode.Additive)
+					else if (ObjectManager.Objects[ObjectIndex].Mesh.Materials[k].BlendMode == BlendModes.Additive)
 					{
 						alpha = true;
 					}

@@ -1,7 +1,7 @@
 ﻿using System;
 using OpenBveApi.Colors;
 using OpenBveApi.Geometry;
-using OpenBveApi.Runtime;
+using OpenBveApi.Objects;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using Vector3 = OpenBveApi.Math.Vector3;
@@ -298,7 +298,7 @@ namespace OpenBve
                 for (int i = 0; i < DynamicAlpha.FaceCount; i++)
                 {
                     int r = (int)ObjectManager.Objects[DynamicAlpha.Faces[i].ObjectIndex].Mesh.Faces[DynamicAlpha.Faces[i].FaceIndex].Material;
-                    if (ObjectManager.Objects[DynamicAlpha.Faces[i].ObjectIndex].Mesh.Materials[r].BlendMode == World.MeshMaterialBlendMode.Normal & ObjectManager.Objects[DynamicAlpha.Faces[i].ObjectIndex].Mesh.Materials[r].GlowAttenuationData == 0)
+                    if (ObjectManager.Objects[DynamicAlpha.Faces[i].ObjectIndex].Mesh.Materials[r].BlendMode == BlendModes.Normal & ObjectManager.Objects[DynamicAlpha.Faces[i].ObjectIndex].Mesh.Materials[r].GlowAttenuationData == 0)
                     {
                         if (ObjectManager.Objects[DynamicAlpha.Faces[i].ObjectIndex].Mesh.Materials[r].Color.A == 255)
                         {
@@ -313,7 +313,7 @@ namespace OpenBve
                 for (int i = 0; i < DynamicAlpha.FaceCount; i++)
                 {
                     int r = (int)ObjectManager.Objects[DynamicAlpha.Faces[i].ObjectIndex].Mesh.Faces[DynamicAlpha.Faces[i].FaceIndex].Material;
-                    if (ObjectManager.Objects[DynamicAlpha.Faces[i].ObjectIndex].Mesh.Materials[r].BlendMode == World.MeshMaterialBlendMode.Additive)
+                    if (ObjectManager.Objects[DynamicAlpha.Faces[i].ObjectIndex].Mesh.Materials[r].BlendMode == BlendModes.Additive)
                     {
                         if (!additive)
                         {
@@ -396,7 +396,7 @@ namespace OpenBve
                     for (int i = 0; i < OverlayAlpha.FaceCount; i++)
                     {
                         int r = (int)ObjectManager.Objects[OverlayAlpha.Faces[i].ObjectIndex].Mesh.Faces[OverlayAlpha.Faces[i].FaceIndex].Material;
-                        if (ObjectManager.Objects[OverlayAlpha.Faces[i].ObjectIndex].Mesh.Materials[r].BlendMode == World.MeshMaterialBlendMode.Normal & ObjectManager.Objects[OverlayAlpha.Faces[i].ObjectIndex].Mesh.Materials[r].GlowAttenuationData == 0)
+                        if (ObjectManager.Objects[OverlayAlpha.Faces[i].ObjectIndex].Mesh.Materials[r].BlendMode == BlendModes.Normal & ObjectManager.Objects[OverlayAlpha.Faces[i].ObjectIndex].Mesh.Materials[r].GlowAttenuationData == 0)
                         {
                             if (ObjectManager.Objects[OverlayAlpha.Faces[i].ObjectIndex].Mesh.Materials[r].Color.A == 255)
                             {
@@ -411,7 +411,7 @@ namespace OpenBve
                     for (int i = 0; i < OverlayAlpha.FaceCount; i++)
                     {
                         int r = (int)ObjectManager.Objects[OverlayAlpha.Faces[i].ObjectIndex].Mesh.Faces[OverlayAlpha.Faces[i].FaceIndex].Material;
-                        if (ObjectManager.Objects[OverlayAlpha.Faces[i].ObjectIndex].Mesh.Materials[r].BlendMode == World.MeshMaterialBlendMode.Additive)
+                        if (ObjectManager.Objects[OverlayAlpha.Faces[i].ObjectIndex].Mesh.Materials[r].BlendMode == BlendModes.Additive)
                         {
                             if (!additive)
                             {
@@ -544,7 +544,7 @@ namespace OpenBve
             }
             // blend mode
             float factor;
-            if (Material.BlendMode == World.MeshMaterialBlendMode.Additive)
+            if (Material.BlendMode == BlendModes.Additive)
             {
                 factor = 1.0f;
                 if (!BlendEnabled) GL.Enable(EnableCap.Blend);
@@ -746,7 +746,7 @@ namespace OpenBve
                 }
             }
             // finalize
-            if (Material.BlendMode == World.MeshMaterialBlendMode.Additive)
+            if (Material.BlendMode == BlendModes.Additive)
             {
                 GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
                 if (!BlendEnabled) GL.Disable(EnableCap.Blend);

@@ -4,6 +4,7 @@
 using System;
 using OpenBveApi.Colors;
 using OpenBveApi.Geometry;
+using OpenBveApi.Objects;
 using OpenBveApi.Math;
 using Vector2 = OpenBveApi.Math.Vector2;
 
@@ -24,7 +25,7 @@ namespace OpenBve {
 			internal Textures.Texture NighttimeTexture;
 			/// <summary>A value between 0 (daytime) and 255 (nighttime).</summary>
 			internal byte DaytimeNighttimeBlend;
-			internal MeshMaterialBlendMode BlendMode;
+			internal BlendModes BlendMode;
 			/// <summary>A bit mask specifying the glow properties. Use GetGlowAttenuationData to create valid data for this field.</summary>
 			internal ushort GlowAttenuationData;
 			internal const int EmissiveColorMask = 1;
@@ -53,10 +54,7 @@ namespace OpenBve {
 				return false;
 			}
 		}
-		internal enum MeshMaterialBlendMode : byte {
-			Normal = 0,
-			Additive = 1
-		}
+		
 		
 		// mesh face vertex
 		/// <summary>Represents a reference to a vertex and the normal to be used for that vertex.</summary>
@@ -1199,6 +1197,59 @@ namespace OpenBve {
 				CreateNormals(ref Mesh, i);
 			}
 		}
+
+		internal static void CreateNormals(ref SharedMesh Mesh)
+		{
+			for (int i = 0; i < Mesh.Faces.Length; i++)
+			{
+				CreateNormals(ref Mesh, i);
+			}
+		}
+
+		internal static void CreateNormals(ref SharedMesh Mesh, int FaceIndex)
+		{
+			if (Mesh.Faces[FaceIndex].Vertices.Length >= 3)
+			{
+				int i0 = Mesh.Faces[FaceIndex].Vertices[0].SpatialCoordinates;
+				int i1 = Mesh.Faces[FaceIndex].Vertices[1].SpatialCoordinates;
+				int i2 = Mesh.Faces[FaceIndex].Vertices[2].SpatialCoordinates;
+				double ax = Mesh.SpatialCoordinates[i1].X - Mesh.SpatialCoordinates[i0].X;
+				double ay = Mesh.SpatialCoordinates[i1].Y - Mesh.SpatialCoordinates[i0].Y;
+				double az = Mesh.SpatialCoordinates[i1].Z - Mesh.SpatialCoordinates[i0].Z;
+				double bx = Mesh.SpatialCoordinates[i2].X - Mesh.SpatialCoordinates[i0].X;
+				double by = Mesh.SpatialCoordinates[i2].Y - Mesh.SpatialCoordinates[i0].Y;
+				double bz = Mesh.SpatialCoordinates[i2].Z - Mesh.SpatialCoordinates[i0].Z;
+				double nx = ay * bz - az * by;
+				double ny = az * bx - ax * bz;
+				double nz = ax * by - ay * bx;
+				double t = nx * nx + ny * ny + nz * nz;
+				if (t != 0.0)
+				{
+					t = 1.0 / Math.Sqrt(t);
+					float mx = (float)(nx * t);
+					float my = (float)(ny * t);
+					float mz = (float)(nz * t);
+					for (int j = 0; j < Mesh.Faces[FaceIndex].Vertices.Length; j++)
+					{
+						if (Vector3.IsZero(Mesh.Normals[Mesh.Faces[FaceIndex].Vertices[j].Normal]))
+						{
+							Mesh.Normals[Mesh.Faces[FaceIndex].Vertices[j].Normal] = new Vector3(mx, my, mz);
+						}
+					}
+				}
+				else
+				{
+					for (int j = 0; j < Mesh.Faces[FaceIndex].Vertices.Length; j++)
+					{
+						if (Vector3.IsZero(Mesh.Normals[Mesh.Faces[FaceIndex].Vertices[j].Normal]))
+						{
+							Mesh.Normals[Mesh.Faces[FaceIndex].Vertices[j].Normal] = new Vector3(0.0f, 1.0f, 0.0f);
+						}
+					}
+				}
+			}
+		}
+
 		internal static void CreateNormals(ref Mesh Mesh, int FaceIndex) {
 			if (Mesh.Faces[FaceIndex].Vertices.Length >= 3) {
 				int i0 = (int)Mesh.Faces[FaceIndex].Vertices[0].Index;
