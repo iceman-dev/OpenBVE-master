@@ -488,7 +488,7 @@ namespace OpenBve
         {
             if (CullEnabled)
             {
-                if (!OptionBackfaceCulling || (ObjectManager.Objects[Face.ObjectIndex].Mesh.Faces[Face.FaceIndex].Flags & World.MeshFace.Face2Mask) != 0)
+                if (!OptionBackfaceCulling || (ObjectManager.Objects[Face.ObjectIndex].Mesh.Faces[Face.FaceIndex].Flags & MeshFace.Face2Mask) != 0)
                 {
                     GL.Disable(EnableCap.CullFace);
                     CullEnabled = false;
@@ -496,7 +496,7 @@ namespace OpenBve
             }
             else if (OptionBackfaceCulling)
             {
-                if ((ObjectManager.Objects[Face.ObjectIndex].Mesh.Faces[Face.FaceIndex].Flags & World.MeshFace.Face2Mask) == 0)
+                if ((ObjectManager.Objects[Face.ObjectIndex].Mesh.Faces[Face.FaceIndex].Flags & MeshFace.Face2Mask) == 0)
                 {
                     GL.Enable(EnableCap.CullFace);
                     CullEnabled = true;
@@ -505,7 +505,7 @@ namespace OpenBve
             int r = (int)ObjectManager.Objects[Face.ObjectIndex].Mesh.Faces[Face.FaceIndex].Material;
             RenderFace(ref ObjectManager.Objects[Face.ObjectIndex].Mesh.Materials[r], ObjectManager.Objects[Face.ObjectIndex].Mesh.Vertices, Face.Wrap, ref ObjectManager.Objects[Face.ObjectIndex].Mesh.Faces[Face.FaceIndex], CameraX, CameraY, CameraZ);
         }
-        private static void RenderFace(ref World.MeshMaterial Material, Vertex[] Vertices, Textures.OpenGlTextureWrapMode wrap, ref World.MeshFace Face, double CameraX, double CameraY, double CameraZ)
+        private static void RenderFace(ref World.MeshMaterial Material, Vertex[] Vertices, Textures.OpenGlTextureWrapMode wrap, ref MeshFace Face, double CameraX, double CameraY, double CameraZ)
         {
             // texture
             if (Material.DaytimeTexture != null)
@@ -581,19 +581,19 @@ namespace OpenBve
                 }
             }
             // render daytime polygon
-            int FaceType = Face.Flags & World.MeshFace.FaceTypeMask;
+            int FaceType = Face.Flags & MeshFace.FaceTypeMask;
             switch (FaceType)
             {
-                case World.MeshFace.FaceTypeTriangles:
+                case MeshFace.FaceTypeTriangles:
                     GL.Begin(PrimitiveType.Triangles);
                     break;
-                case World.MeshFace.FaceTypeTriangleStrip:
+                case MeshFace.FaceTypeTriangleStrip:
                     GL.Begin(PrimitiveType.TriangleStrip);
                     break;
-                case World.MeshFace.FaceTypeQuads:
+                case MeshFace.FaceTypeQuads:
                     GL.Begin(PrimitiveType.Quads);
                     break;
-                case World.MeshFace.FaceTypeQuadStrip:
+                case MeshFace.FaceTypeQuadStrip:
                     GL.Begin(PrimitiveType.QuadStrip);
                     break;
                 default:
@@ -676,16 +676,16 @@ namespace OpenBve
                 GL.Enable(EnableCap.AlphaTest);
                 switch (FaceType)
                 {
-                    case World.MeshFace.FaceTypeTriangles:
+                    case MeshFace.FaceTypeTriangles:
                         GL.Begin(PrimitiveType.Triangles);
                         break;
-                    case World.MeshFace.FaceTypeTriangleStrip:
+                    case MeshFace.FaceTypeTriangleStrip:
                         GL.Begin(PrimitiveType.TriangleStrip);
                         break;
-                    case World.MeshFace.FaceTypeQuads:
+                    case MeshFace.FaceTypeQuads:
                         GL.Begin(PrimitiveType.Quads);
                         break;
-                    case World.MeshFace.FaceTypeQuadStrip:
+                    case MeshFace.FaceTypeQuadStrip:
                         GL.Begin(PrimitiveType.QuadStrip);
                         break;
                     default:
@@ -904,7 +904,7 @@ namespace OpenBve
         }
 
         // get distance factor
-        private static double GetDistanceFactor(Vertex[] Vertices, ref World.MeshFace Face, ushort GlowAttenuationData, double CameraX, double CameraY, double CameraZ)
+        private static double GetDistanceFactor(Vertex[] Vertices, ref MeshFace Face, ushort GlowAttenuationData, double CameraX, double CameraY, double CameraZ)
         {
             if (Face.Vertices.Length == 0)
             {

@@ -44,11 +44,11 @@ namespace OpenBve {
 		}
 		private class MeshBuilder {
 			internal Vertex[] Vertices;
-			internal World.MeshFace[] Faces;
+			internal MeshFace[] Faces;
 			internal Material[] Materials;
 			internal MeshBuilder() {
 				this.Vertices = new Vertex[] { };
-				this.Faces = new World.MeshFace[] { };
+				this.Faces = new MeshFace[] { };
 				this.Materials = new Material[] { new Material() };
 			}
 		}
@@ -69,7 +69,7 @@ namespace OpenBve {
 		    {
 		        Mesh =
 		        {
-		            Faces = new World.MeshFace[] {},
+		            Faces = new MeshFace[] {},
 		            Materials = new World.MeshMaterial[] {},
 		            Vertices = new Vertex[] {}
 		        }
@@ -275,8 +275,8 @@ namespace OpenBve {
 									}
 									if (q) {
 										int f = Builder.Faces.Length;
-										Array.Resize<World.MeshFace>(ref Builder.Faces, f + 1);
-									    Builder.Faces[f] = new World.MeshFace {Vertices = new MeshFaceVertex[Arguments.Length]};
+										Array.Resize<MeshFace>(ref Builder.Faces, f + 1);
+									    Builder.Faces[f] = new MeshFace {Vertices = new MeshFaceVertex[Arguments.Length]};
 									    while (Builder.Vertices.Length > Normals.Length) {
 											Array.Resize<Vector3>(ref Normals, Normals.Length << 1);
 										}
@@ -285,7 +285,7 @@ namespace OpenBve {
 											Builder.Faces[f].Vertices[j].Normal = Normals[a[j]];
 										}
 										if (cmd == "addface2" | cmd == "face2") {
-											Builder.Faces[f].Flags = (byte)World.MeshFace.Face2Mask;
+											Builder.Faces[f].Flags = (byte)MeshFace.Face2Mask;
 										}
 									}
 								}
@@ -783,7 +783,7 @@ namespace OpenBve {
 			Builder.Vertices[v + 6].Coordinates = new Vector3(-sx, -sy, sz);
 			Builder.Vertices[v + 7].Coordinates = new Vector3(-sx, sy, sz);
 			int f = Builder.Faces.Length;
-			Array.Resize<World.MeshFace>(ref Builder.Faces, f + 6);
+			Array.Resize<MeshFace>(ref Builder.Faces, f + 6);
 			Builder.Faces[f + 0].Vertices = new MeshFaceVertex[] { new MeshFaceVertex(v + 0), new MeshFaceVertex(v + 1), new MeshFaceVertex(v + 2), new MeshFaceVertex(v + 3) };
 			Builder.Faces[f + 1].Vertices = new MeshFaceVertex[] { new MeshFaceVertex(v + 0), new MeshFaceVertex(v + 4), new MeshFaceVertex(v + 5), new MeshFaceVertex(v + 1) };
 			Builder.Faces[f + 2].Vertices = new MeshFaceVertex[] { new MeshFaceVertex(v + 0), new MeshFaceVertex(v + 3), new MeshFaceVertex(v + 7), new MeshFaceVertex(v + 4) };
@@ -831,7 +831,7 @@ namespace OpenBve {
 			}
 			// faces
 			int f = Builder.Faces.Length;
-			Array.Resize<World.MeshFace>(ref Builder.Faces, f + n + m);
+			Array.Resize<MeshFace>(ref Builder.Faces, f + n + m);
 			for (int i = 0; i < n; i++) {
 				Builder.Faces[f + i].Flags = 0;
 				int i0 = (2 * i + 2) % (2 * n);
@@ -1023,7 +1023,7 @@ namespace OpenBve {
 				int mf = Object.Mesh.Faces.Length;
 				int mm = Object.Mesh.Materials.Length;
 				int mv = Object.Mesh.Vertices.Length;
-				Array.Resize<World.MeshFace>(ref Object.Mesh.Faces, mf + Builder.Faces.Length);
+				Array.Resize<MeshFace>(ref Object.Mesh.Faces, mf + Builder.Faces.Length);
 				Array.Resize<World.MeshMaterial>(ref Object.Mesh.Materials, mm + Builder.Materials.Length);
 				Array.Resize<Vertex>(ref Object.Mesh.Vertices, mv + Builder.Vertices.Length);
 				for (int i = 0; i < Builder.Vertices.Length; i++) {

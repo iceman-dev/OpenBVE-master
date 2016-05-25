@@ -1036,7 +1036,7 @@ namespace OpenBve {
 		private static bool ProcessStructure(string FileName, Structure Structure, out ObjectManager.StaticObject Object, ObjectManager.ObjectLoadMode LoadMode, bool ForceTextureRepeatX, bool ForceTextureRepeatY) {
 			System.Globalization.CultureInfo Culture = System.Globalization.CultureInfo.InvariantCulture;
 			Object = new ObjectManager.StaticObject();
-			Object.Mesh.Faces = new World.MeshFace[] { };
+			Object.Mesh.Faces = new MeshFace[] { };
 			Object.Mesh.Materials = new World.MeshMaterial[] { };
 			Object.Mesh.Vertices = new Vertex[] { };
 			// file
@@ -1561,7 +1561,7 @@ namespace OpenBve {
 							int mf = Object.Mesh.Faces.Length;
 							int mm = Object.Mesh.Materials.Length;
 							int mv = Object.Mesh.Vertices.Length;
-							Array.Resize<World.MeshFace>(ref Object.Mesh.Faces, mf + nFaces);
+							Array.Resize<MeshFace>(ref Object.Mesh.Faces, mf + nFaces);
 							Array.Resize<World.MeshMaterial>(ref Object.Mesh.Materials, mm + Materials.Length);
 							Array.Resize<Vertex>(ref Object.Mesh.Vertices, mv + Vertices.Length);
 							for (int j = 0; j < Materials.Length; j++) {

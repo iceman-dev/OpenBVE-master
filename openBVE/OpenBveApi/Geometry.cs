@@ -79,5 +79,57 @@ namespace OpenBveApi.Geometry
 			return false;
 		}
 	}
+
+	/// <summary>Represents a face consisting of vertices and material attributes.</summary>
+	public struct MeshFace
+	{
+		/// <summary>The array of vertices and the corresponding normals</summary>
+		public MeshFaceVertex[] Vertices;
+		/// <summary>A reference to an element in the Material array of the containing Mesh structure.</summary>
+		public ushort Material;
+		/// <summary>A bit mask combining constants of the MeshFace structure.</summary>
+		public byte Flags;
+		/// <summary>Creates a new MeshFace using the specified vertex indicies</summary>
+		public MeshFace(int[] Vertices)
+		{
+			this.Vertices = new MeshFaceVertex[Vertices.Length];
+			for (int i = 0; i < Vertices.Length; i++)
+			{
+				this.Vertices[i] = new MeshFaceVertex(Vertices[i]);
+			}
+			this.Material = 0;
+			this.Flags = 0;
+		}
+		/// <summary>Flips the MeshFace</summary>
+		public void Flip()
+		{
+			if ((this.Flags & FaceTypeMask) == FaceTypeQuadStrip)
+			{
+				for (int i = 0; i < this.Vertices.Length; i += 2)
+				{
+					MeshFaceVertex x = this.Vertices[i];
+					this.Vertices[i] = this.Vertices[i + 1];
+					this.Vertices[i + 1] = x;
+				}
+			}
+			else
+			{
+				int n = this.Vertices.Length;
+				for (int i = 0; i < (n >> 1); i++)
+				{
+					MeshFaceVertex x = this.Vertices[i];
+					this.Vertices[i] = this.Vertices[n - i - 1];
+					this.Vertices[n - i - 1] = x;
+				}
+			}
+		}
+		public const int FaceTypeMask = 7;
+		public const int FaceTypePolygon = 0;
+		public const int FaceTypeTriangles = 1;
+		public const int FaceTypeTriangleStrip = 2;
+		public const int FaceTypeQuads = 3;
+		public const int FaceTypeQuadStrip = 4;
+		public const int Face2Mask = 8;
+	}
 	
 }
