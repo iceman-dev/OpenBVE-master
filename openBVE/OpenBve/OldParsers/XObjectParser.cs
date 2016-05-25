@@ -1584,9 +1584,9 @@ namespace OpenBve {
 							}
 							for (int j = 0; j < nFaces; j++) {
 								Object.Mesh.Faces[mf + j].Material = (ushort)FaceMaterials[j];
-								Object.Mesh.Faces[mf + j].Vertices = new World.MeshFaceVertex[Faces[j].Length];
+								Object.Mesh.Faces[mf + j].Vertices = new MeshFaceVertex[Faces[j].Length];
 								for (int k = 0; k < Faces[j].Length; k++) {
-									Object.Mesh.Faces[mf + j].Vertices[mv + k] = new World.MeshFaceVertex(mv + Faces[j][k], FaceNormals[j][k]);
+									Object.Mesh.Faces[mf + j].Vertices[mv + k] = new MeshFaceVertex(mv + Faces[j][k], FaceNormals[j][k]);
 								}
 							}
 							for (int j = 0; j < Vertices.Length; j++) {

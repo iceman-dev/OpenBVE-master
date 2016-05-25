@@ -57,63 +57,43 @@ namespace OpenBve {
 		
 		
 		// mesh face vertex
-		/// <summary>Represents a reference to a vertex and the normal to be used for that vertex.</summary>
-		internal struct MeshFaceVertex {
-			/// <summary>A reference to an element in the Vertex array of the contained Mesh structure.</summary>
-			internal ushort Index;
-			/// <summary>The normal to be used at the vertex.</summary>
-			internal Vector3 Normal;
-			internal MeshFaceVertex(int Index) {
-				this.Index = (ushort)Index;
-				this.Normal = new Vector3(0.0f, 0.0f, 0.0f);
-			}
-			internal MeshFaceVertex(int Index, Vector3 Normal) {
-				this.Index = (ushort)Index;
-				this.Normal = Normal;
-			}
-			// operators
-			public static bool operator ==(MeshFaceVertex A, MeshFaceVertex B) {
-				if (A.Index != B.Index) return false;
-				if (A.Normal.X != B.Normal.X) return false;
-				if (A.Normal.Y != B.Normal.Y) return false;
-				if (A.Normal.Z != B.Normal.Z) return false;
-				return true;
-			}
-			public static bool operator !=(MeshFaceVertex A, MeshFaceVertex B) {
-				if (A.Index != B.Index) return true;
-				if (A.Normal.X != B.Normal.X) return true;
-				if (A.Normal.Y != B.Normal.Y) return true;
-				if (A.Normal.Z != B.Normal.Z) return true;
-				return false;
-			}
-		}
+
 		
 		// mesh face
 		/// <summary>Represents a face consisting of vertices and material attributes.</summary>
-		internal struct MeshFace {
+		internal struct MeshFace
+		{
 			internal MeshFaceVertex[] Vertices;
 			/// <summary>A reference to an element in the Material array of the containing Mesh structure.</summary>
 			internal ushort Material;
 			/// <summary>A bit mask combining constants of the MeshFace structure.</summary>
 			internal byte Flags;
-			internal MeshFace(int[] Vertices) {
+			internal MeshFace(int[] Vertices)
+			{
 				this.Vertices = new MeshFaceVertex[Vertices.Length];
-				for (int i = 0; i < Vertices.Length; i++) {
+				for (int i = 0; i < Vertices.Length; i++)
+				{
 					this.Vertices[i] = new MeshFaceVertex(Vertices[i]);
 				}
 				this.Material = 0;
 				this.Flags = 0;
 			}
-			internal void Flip() {
-				if ((this.Flags & FaceTypeMask) == FaceTypeQuadStrip) {
-					for (int i = 0; i < this.Vertices.Length; i += 2) {
+			internal void Flip()
+			{
+				if ((this.Flags & FaceTypeMask) == FaceTypeQuadStrip)
+				{
+					for (int i = 0; i < this.Vertices.Length; i += 2)
+					{
 						MeshFaceVertex x = this.Vertices[i];
 						this.Vertices[i] = this.Vertices[i + 1];
 						this.Vertices[i + 1] = x;
 					}
-				} else {
+				}
+				else
+				{
 					int n = this.Vertices.Length;
-					for (int i = 0; i < (n >> 1); i++) {
+					for (int i = 0; i < (n >> 1); i++)
+					{
 						MeshFaceVertex x = this.Vertices[i];
 						this.Vertices[i] = this.Vertices[n - i - 1];
 						this.Vertices[n - i - 1] = x;

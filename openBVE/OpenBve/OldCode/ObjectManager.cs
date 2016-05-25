@@ -218,7 +218,7 @@ namespace OpenBve {
 					ObjectManager.Objects[i].Mesh.Faces[k].Flags = Object.States[t].Object.Mesh.Faces[k].Flags;
 					ObjectManager.Objects[i].Mesh.Faces[k].Material = Object.States[t].Object.Mesh.Faces[k].Material;
 					int o = Object.States[t].Object.Mesh.Faces[k].Vertices.Length;
-					ObjectManager.Objects[i].Mesh.Faces[k].Vertices = new World.MeshFaceVertex[o];
+					ObjectManager.Objects[i].Mesh.Faces[k].Vertices = new MeshFaceVertex[o];
 					for (int h = 0; h < o; h++) {
 						ObjectManager.Objects[i].Mesh.Faces[k].Vertices[h] = Object.States[t].Object.Mesh.Faces[k].Vertices[h];
 					}
@@ -1081,7 +1081,7 @@ namespace OpenBve {
 					if (keep) {
 						int n = (Prototype.Mesh.Faces[i].Vertices.Length / 3) * 3;
 						if (Prototype.Mesh.Faces[i].Vertices.Length != n) {
-							Array.Resize<World.MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, n);
+							Array.Resize<MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, n);
 						}
 					}
 				} else if (type == World.MeshFace.FaceTypeQuads) {
@@ -1089,7 +1089,7 @@ namespace OpenBve {
 					if (keep) {
 						int n = Prototype.Mesh.Faces[i].Vertices.Length & ~3;
 						if (Prototype.Mesh.Faces[i].Vertices.Length != n) {
-							Array.Resize<World.MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, n);
+							Array.Resize<MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, n);
 						}
 					}
 				} else if (type == World.MeshFace.FaceTypeQuadStrip) {
@@ -1097,7 +1097,7 @@ namespace OpenBve {
 					if (keep) {
 						int n = Prototype.Mesh.Faces[i].Vertices.Length & ~1;
 						if (Prototype.Mesh.Faces[i].Vertices.Length != n) {
-							Array.Resize<World.MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, n);
+							Array.Resize<MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, n);
 						}
 					}
 				} else {
@@ -1233,7 +1233,7 @@ namespace OpenBve {
 								Array.Resize<World.MeshFace>(ref Prototype.Mesh.Faces, Prototype.Mesh.Faces.Length << 1);
 							}
 							for (int j = 0; j < n; j++) {
-								Prototype.Mesh.Faces[f + j].Vertices = new World.MeshFaceVertex[3];
+								Prototype.Mesh.Faces[f + j].Vertices = new MeshFaceVertex[3];
 								for (int k = 0; k < 3; k++) {
 									Prototype.Mesh.Faces[f + j].Vertices[k] = Prototype.Mesh.Faces[i].Vertices[3 + 3 * j + k];
 								}
@@ -1244,7 +1244,7 @@ namespace OpenBve {
 									Prototype.Mesh.Faces[i].Flags |= World.MeshFace.FaceTypeTriangles;
 								}
 							}
-							Array.Resize<World.MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, 3);
+							Array.Resize<MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, 3);
 							f += n;
 						}
 					} else if (type == World.MeshFace.FaceTypeQuads) {
@@ -1254,7 +1254,7 @@ namespace OpenBve {
 								Array.Resize<World.MeshFace>(ref Prototype.Mesh.Faces, Prototype.Mesh.Faces.Length << 1);
 							}
 							for (int j = 0; j < n; j++) {
-								Prototype.Mesh.Faces[f + j].Vertices = new World.MeshFaceVertex[4];
+								Prototype.Mesh.Faces[f + j].Vertices = new MeshFaceVertex[4];
 								for (int k = 0; k < 4; k++) {
 									Prototype.Mesh.Faces[f + j].Vertices[k] = Prototype.Mesh.Faces[i].Vertices[4 + 4 * j + k];
 								}
@@ -1265,7 +1265,7 @@ namespace OpenBve {
 									Prototype.Mesh.Faces[i].Flags |= World.MeshFace.FaceTypeQuads;
 								}
 							}
-							Array.Resize<World.MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, 4);
+							Array.Resize<MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, 4);
 							f += n;
 						}
 					}
@@ -1289,14 +1289,14 @@ namespace OpenBve {
 												int l = (k + 1) % 3;
 												int n = Prototype.Mesh.Faces[i].Vertices.Length;
 												if (Prototype.Mesh.Faces[i].Vertices[0] == Prototype.Mesh.Faces[j].Vertices[k] & Prototype.Mesh.Faces[i].Vertices[1] == Prototype.Mesh.Faces[j].Vertices[l]) {
-													Array.Resize<World.MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, n + 1);
+													Array.Resize<MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, n + 1);
 													for (int h = n; h >= 1; h--) {
 														Prototype.Mesh.Faces[i].Vertices[h] = Prototype.Mesh.Faces[i].Vertices[h - 1];
 													}
 													Prototype.Mesh.Faces[i].Vertices[0] = Prototype.Mesh.Faces[j].Vertices[(k + 2) % 3];
 													keep = false;
 												} else if (Prototype.Mesh.Faces[i].Vertices[n - 1] == Prototype.Mesh.Faces[j].Vertices[l] & Prototype.Mesh.Faces[i].Vertices[n - 2] == Prototype.Mesh.Faces[j].Vertices[k]) {
-													Array.Resize<World.MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, n + 1);
+													Array.Resize<MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, n + 1);
 													Prototype.Mesh.Faces[i].Vertices[n] = Prototype.Mesh.Faces[j].Vertices[(k + 2) % 3];
 													keep = false;
 												}
@@ -1340,7 +1340,7 @@ namespace OpenBve {
 														Prototype.Mesh.Faces[i].Flags &= (byte)~World.MeshFace.FaceTypeMask;
 														Prototype.Mesh.Faces[i].Flags |= World.MeshFace.FaceTypeTriangleStrip;
 													}
-													Prototype.Mesh.Faces[i].Vertices = new World.MeshFaceVertex[] {
+													Prototype.Mesh.Faces[i].Vertices = new MeshFaceVertex[] {
 														Prototype.Mesh.Faces[i].Vertices[(ik + 2) % 3],
 														Prototype.Mesh.Faces[i].Vertices[ik],
 														Prototype.Mesh.Faces[i].Vertices[il],
@@ -1383,7 +1383,7 @@ namespace OpenBve {
 												int l = (k + 1) & 3;
 												int n = Prototype.Mesh.Faces[i].Vertices.Length;
 												if (Prototype.Mesh.Faces[i].Vertices[0] == Prototype.Mesh.Faces[j].Vertices[l] & Prototype.Mesh.Faces[i].Vertices[1] == Prototype.Mesh.Faces[j].Vertices[k]) {
-													Array.Resize<World.MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, n + 2);
+													Array.Resize<MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, n + 2);
 													for (int h = n + 1; h >= 2; h--) {
 														Prototype.Mesh.Faces[i].Vertices[h] = Prototype.Mesh.Faces[i].Vertices[h - 2];
 													}
@@ -1391,7 +1391,7 @@ namespace OpenBve {
 													Prototype.Mesh.Faces[i].Vertices[1] = Prototype.Mesh.Faces[j].Vertices[(k + 3) & 3];
 													keep = false;
 												} else if (Prototype.Mesh.Faces[i].Vertices[n - 1] == Prototype.Mesh.Faces[j].Vertices[l] & Prototype.Mesh.Faces[i].Vertices[n - 2] == Prototype.Mesh.Faces[j].Vertices[k]) {
-													Array.Resize<World.MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, n + 2);
+													Array.Resize<MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, n + 2);
 													Prototype.Mesh.Faces[i].Vertices[n] = Prototype.Mesh.Faces[j].Vertices[(k + 3) & 3];
 													Prototype.Mesh.Faces[i].Vertices[n + 1] = Prototype.Mesh.Faces[j].Vertices[(k + 2) & 3];
 													keep = false;
@@ -1436,7 +1436,7 @@ namespace OpenBve {
 														Prototype.Mesh.Faces[i].Flags &= (byte)~World.MeshFace.FaceTypeMask;
 														Prototype.Mesh.Faces[i].Flags |= World.MeshFace.FaceTypeQuadStrip;
 													}
-													Prototype.Mesh.Faces[i].Vertices = new World.MeshFaceVertex[] {
+													Prototype.Mesh.Faces[i].Vertices = new MeshFaceVertex[] {
 														Prototype.Mesh.Faces[i].Vertices[(ik + 2) & 3],
 														Prototype.Mesh.Faces[i].Vertices[(ik + 3) & 3],
 														Prototype.Mesh.Faces[i].Vertices[il],
@@ -1473,7 +1473,7 @@ namespace OpenBve {
 							if (type == type2 & face == face2) {
 								if (Prototype.Mesh.Faces[i].Material == Prototype.Mesh.Faces[j].Material) {
 									int n = Prototype.Mesh.Faces[i].Vertices.Length;
-									Array.Resize<World.MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, n + Prototype.Mesh.Faces[j].Vertices.Length);
+									Array.Resize<MeshFaceVertex>(ref Prototype.Mesh.Faces[i].Vertices, n + Prototype.Mesh.Faces[j].Vertices.Length);
 									for (int k = 0; k < Prototype.Mesh.Faces[j].Vertices.Length; k++) {
 										Prototype.Mesh.Faces[i].Vertices[n + k] = Prototype.Mesh.Faces[j].Vertices[k];
 									}
@@ -1614,7 +1614,7 @@ namespace OpenBve {
 			for (int j = 0; j < Prototype.Mesh.Faces.Length; j++) {
 				Object.Mesh.Faces[j].Flags = Prototype.Mesh.Faces[j].Flags;
 				Object.Mesh.Faces[j].Material = Prototype.Mesh.Faces[j].Material;
-				Object.Mesh.Faces[j].Vertices = new World.MeshFaceVertex[Prototype.Mesh.Faces[j].Vertices.Length];
+				Object.Mesh.Faces[j].Vertices = new MeshFaceVertex[Prototype.Mesh.Faces[j].Vertices.Length];
 				for (int k = 0; k < Prototype.Mesh.Faces[j].Vertices.Length; k++) {
 					Object.Mesh.Faces[j].Vertices[k] = Prototype.Mesh.Faces[j].Vertices[k];
 					double nx = Object.Mesh.Faces[j].Vertices[k].Normal.X;
@@ -1709,7 +1709,7 @@ namespace OpenBve {
 			for (int j = 0; j < Prototype.Mesh.Faces.Length; j++) {
 				Result.Mesh.Faces[j].Flags = Prototype.Mesh.Faces[j].Flags;
 				Result.Mesh.Faces[j].Material = Prototype.Mesh.Faces[j].Material;
-				Result.Mesh.Faces[j].Vertices = new World.MeshFaceVertex[Prototype.Mesh.Faces[j].Vertices.Length];
+				Result.Mesh.Faces[j].Vertices = new MeshFaceVertex[Prototype.Mesh.Faces[j].Vertices.Length];
 				for (int k = 0; k < Prototype.Mesh.Faces[j].Vertices.Length; k++) {
 					Result.Mesh.Faces[j].Vertices[k] = Prototype.Mesh.Faces[j].Vertices[k];
 				}
