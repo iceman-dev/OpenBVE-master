@@ -104,12 +104,23 @@ namespace OpenBve {
 		// ================================
 
 		// template
-		private class Template {
+		private class Template
+		{
 			internal string Name;
+			internal string Key;
 			internal string[] Members;
-			internal Template(string Name, string[] Members) {
+			internal Template(string Name, string[] Members)
+			{
 				this.Name = Name;
 				this.Members = Members;
+				this.Key = String.Empty; ;
+			}
+
+			internal Template(string Name, string[] Members, string Key)
+			{
+				this.Name = Name;
+				this.Members = Members;
+				this.Key = Key;
 			}
 		}
 		private static Template[] Templates = new Template[] {
@@ -127,11 +138,15 @@ namespace OpenBve {
 		};
 
 		// data
-		private class Structure {
+		private class Structure
+		{
 			internal string Name;
+			internal string Key;
 			internal object[] Data;
-			internal Structure(string Name, object[] Data) {
+			internal Structure(string Name, object[] Data, string Key)
+			{
 				this.Name = Name;
+				this.Key = Key;
 				this.Data = Data;
 			}
 		}
@@ -143,9 +158,22 @@ namespace OpenBve {
 					return Templates[i];
 				}
 			}
+			//Not a default template, so now figure out if it's a named texture
+			string[] splitName = Name.Split(' ');
+			if (splitName[0].ToLowerInvariant() == "material")
+			{
+				AlternateStructure = true;
+				return new Template("Material", new string[] { "ColorRGBA", "float", "ColorRGB", "ColorRGB", "[...]" }, splitName[1]);
+			}
+			if (splitName[0].ToLowerInvariant() == "mesh")
+			{
+				return new Template("Mesh", new string[] { "DWORD", "Vector[0]", "DWORD", "MeshFace[2]", "[...]" });
+			}
 			return new Template(Name, new string[] { "[???]" });
 		}
 
+		private static bool AlternateStructure;
+		private static Structure[] LoadedMaterials;
 		// ================================
 
 		// load textual x
@@ -164,6 +192,37 @@ namespace OpenBve {
 						}
 					}
 				}
+			}
+			//Preprocess strings to get the variants to something we understand....
+			for (int i = 0; i < Lines.Length; i++)
+			{
+				if (i == 36)
+				{
+					int t = i;
+				}
+				string[] splitLine = Lines[i].Split(',');
+				if (splitLine.Length == 2 && splitLine[1].Trim().Length > 0)
+				{
+					if (!splitLine[1].EndsWith(";"))
+					{
+						splitLine[1] = splitLine[1] + ";";
+					}
+					else
+					{
+						splitLine[1] = splitLine[1] + ",";
+					}
+					Lines[i] = splitLine[0] + ';' + splitLine[1];
+				}
+				else if (((splitLine.Length >= 4 && Lines[i].EndsWith(",")) || (splitLine.Length >= 3 && Lines[i].EndsWith(";;") && !Lines[i - 1].EndsWith(";,")) || (splitLine.Length >= 3 && Lines[i].EndsWith(";") && Lines[i - 1].Length > 5 && Lines[i - 1].EndsWith(";"))) && !splitLine[splitLine.Length - 2].EndsWith(";") && Lines[i - 1].Length > 5)
+				{
+					Lines[i - 1] = Lines[i - 1].Substring(0, Lines[i - 1].Length - 1) + ";,";
+				}
+
+				if ((Lines[i].IndexOf('}') != -1 || Lines[i].IndexOf('{') != -1) && Lines[i - 1].EndsWith(";,"))
+				{
+					Lines[i - 1] = Lines[i - 1].Substring(0, Lines[i - 1].Length - 2) + ";;";
+				}
+
 			}
 			// strip away header
 			if (Lines.Length == 0 || Lines[0].Length < 16) {
@@ -216,8 +275,13 @@ namespace OpenBve {
 		}
 
 		// read textual template
-		private static bool ReadTextualTemplate(string FileName, string Content, ref int Position, Template Template, bool Inline, out Structure Structure) {
-			Structure = new Structure(Template.Name, new object[] { });
+		private static bool ReadTextualTemplate(string FileName, string Content, ref int Position, Template Template, bool Inline, out Structure Structure) 
+		{
+			if (Template.Name == "MeshMaterialList" && AlternateStructure)
+			{
+				Template = new Template("MeshMaterialList", new string[] { "DWORD", "DWORD", "DWORD[1]", "string2", "string2", "string2", "string2", "string2", "string2" });
+			}
+			Structure = new Structure(Template.Name, new object[] { }, Template.Key);
 			int i = Position; bool q = false;
 			int m; for (m = 0; m < Template.Members.Length; m++) {
 				if (Position >= Content.Length) break;
@@ -557,6 +621,63 @@ namespace OpenBve {
 							Structure.Data[Structure.Data.Length - 1] = t;
 							i = Position;
 							break;
+						case "string2":
+							int OldPosition = Position;
+							Position++;
+							bool SF = false;
+							while (char.IsWhiteSpace(Content[Position]) || Content[Position] == '{' && Position < Content.Length)
+							{
+								Position++;
+							}
+							i = Position;
+							if (Position >= Content.Length)
+							{
+								Interface.AddMessage(Interface.MessageType.Error, false, "Unexpected end of file encountered while processing a string in template " + Template.Name + " in textual X object file " + FileName);
+								return false;
+							}
+							while (Position < Content.Length)
+							{
+								Position++;
+								if (Content[Position] == ';')
+								{
+									SF = true;
+									break;
+								}
+								if (Content[Position] == ',' || Char.IsWhiteSpace(Content[Position]) || Content[Position] == '}')
+								{
+									break;
+								}
+							}
+							if (Position >= Content.Length)
+							{
+								Interface.AddMessage(Interface.MessageType.Error, false, "Unexpected end of file encountered while processing a string in template " + Template.Name + " in textual X object file " + FileName);
+								return false;
+							}
+							if (SF == true)
+							{
+								Array.Resize<object>(ref Structure.Data, Structure.Data.Length + 1);
+								t = Content.Substring(i, Position - i);
+								Structure.Data[Structure.Data.Length - 1] = t;
+								while (Position < Content.Length)
+								{
+									Position++;
+									if (Content[Position] == '}')
+									{
+										break;
+									}
+								}
+							}
+							else
+							{
+								//String wasn't found
+								Position = OldPosition;
+							}
+							if (Position >= Content.Length)
+							{
+								Interface.AddMessage(Interface.MessageType.Error, false, "Unexpected end of file encountered while processing a string in template " + Template.Name + " in textual X object file " + FileName);
+								return false;
+							}
+							break;
 						default:
 							{
 								Structure o;
@@ -589,14 +710,24 @@ namespace OpenBve {
 					return true;
 				} else {
 					// closed non-inline template
-					while (Position < Content.Length) {
-						if (Content[Position] == '}') {
+					while (Position < Content.Length)
+					{
+						if (Content[Position] == ';')
+						{
+							Position++;
+						}
+						else if (Content[Position] == '}')
+						{
 							Position++;
 							break;
-						} else if (!char.IsWhiteSpace(Content, Position)) {
+						}
+						else if (!char.IsWhiteSpace(Content, Position))
+						{
 							Interface.AddMessage(Interface.MessageType.Error, false, "Invalid character encountered in template " + Template.Name + " in textual X object file " + FileName);
 							return false;
-						} else {
+						}
+						else
+						{
 							Position++;
 						}
 					} if (Position >= Content.Length) {
@@ -669,7 +800,7 @@ namespace OpenBve {
 			const short TOKEN_CBRACE = 0xB;
 			const short TOKEN_COMMA = 0x13;
 			const short TOKEN_SEMICOLON = 0x14;
-			Structure = new Structure(Template.Name, new object[] { });
+			Structure = new Structure(Template.Name, new object[] { }, Template.Key);
 			System.Globalization.CultureInfo Culture = System.Globalization.CultureInfo.InvariantCulture;
 			System.Text.ASCIIEncoding Ascii = new System.Text.ASCIIEncoding();
 			int m; for (m = 0; m < Template.Members.Length; m++) {
@@ -1179,9 +1310,74 @@ namespace OpenBve {
 									FaceNormals[j][k] = new Vector3(0.0f, 0.0f, 0.0f);
 								}
 							}
+							int ds = 4;
+							if (AlternateStructure == true)
+							{
+								ds = f.Data.Length - 1;
+								//If this file has the alternate structure, find the templates (if existing) after the mesh declaration
+								bool cf = false, cn = false;
+								for (int g = i + 1; g < Structure.Data.Length; g++)
+								{
+									int dl = f.Data.Length;
+									Structure h = Structure.Data[g] as Structure;
+									if (h == null)
+									{
+										continue;
+									}
+									if (cf && cn)
+									{
+										//A set of texture co-ords and normal co-ords has been found, so break the loop
+										break;
+									}
+									switch (h.Name)
+									{
+										case "MeshTextureCoords":
+											if (!cf)
+											{
+												cf = true;
+												//Insert into the structure array
+												Array.Resize(ref f.Data, dl + 1);
+												f.Data[dl] = h;
+												//Remove from the main array
+												for (int k = g + 1; k < Structure.Data.Length; k++)
+												{
+													Structure.Data[k - 1] = Structure.Data[k];
+												}
+												Array.Resize(ref Structure.Data, Structure.Data.Length - 1);
+												g--;
+											}
+											break;
+										case "MeshNormals":
+											if (!cn)
+											{
+												cn = true;
+												//Insert into the structure array
+												Array.Resize(ref f.Data, dl + 1);
+												f.Data[dl] = h;
+												//Remove from the main array
+												for (int k = g + 1; k < Structure.Data.Length; k++)
+												{
+													Structure.Data[k - 1] = Structure.Data[k];
+												}
+												Array.Resize(ref Structure.Data, Structure.Data.Length - 1);
+												g--;
+											}
+											break;
+										case "Mesh":
+											//If we've found a mesh, assume that the normals and co-ords have been declared or omitted for the previous mesh
+											cf = true;
+											cn = true;
+											break;
+										default:
+											continue;
+									}
+
+								}
+							}
 							// collect additional templates
 							Material[] Materials = new Material[] { };
-							for (int j = 4; j < f.Data.Length; j++) {
+							for (int j = ds; j < f.Data.Length; j++)
+							{
 								Structure g = f.Data[j] as Structure;
 								if (g == null) {
 									Interface.AddMessage(Interface.MessageType.Error, false, "Unexpected inlined argument encountered in Mesh in x object file " + FileName);
@@ -1228,203 +1424,334 @@ namespace OpenBve {
 													return false;
 												}
 											}
-											// collect material templates
-											int mn = Materials.Length;
-											Array.Resize<Material>(ref Materials, mn + nMaterials);
-											for (int k = 0; k < nMaterials; k++) {
-												Materials[mn + k].faceColor = new Color32(255, 255, 255, 255);
-												Materials[mn + k].specularColor = new Color24(0, 0, 0);
-												Materials[mn + k].emissiveColor = new Color24(0, 0, 0);
-												Materials[mn + k].TextureFilename = null;
+											if (g.Data[3] is String)
+											{
+												for (int m = 3; m < g.Data.Length; m++)
+												{
+													for (int n = 0; n < LoadedMaterials.Length; n++)
+													{
+														if ((string)g.Data[m] == LoadedMaterials[n].Key)
+														{
+															g.Data[m] = LoadedMaterials[n];
+															break;
+														}
+													}
+												}
 											}
-											int MaterialIndex = mn;
-											for (int k = 3; k < g.Data.Length; k++) {
-												Structure h = g.Data[k] as Structure;
-												if (h == null) {
-													Interface.AddMessage(Interface.MessageType.Error, false, "Unexpected inlined argument encountered in MeshMaterialList in Mesh in x object file " + FileName);
-													return false;
-												} else if (h.Name != "Material") {
-													Interface.AddMessage(Interface.MessageType.Error, false, "Material template expected in MeshMaterialList in Mesh in x object file " + FileName);
-													return false;
-												} else {
-													// material
-													if (h.Data.Length < 4) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "Material is expected to have at least 4 arguments in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													} else if (!(h.Data[0] is Structure)) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "faceColor is expected to be a Color32 in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													} else if (!(h.Data[1] is double)) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "power is expected to be a float in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													} else if (!(h.Data[2] is Structure)) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "specularColor is expected to be a Color32 in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													} else if (!(h.Data[3] is Structure)) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "emissiveColor is expected to be a Color32 in Material in MeshMaterialList in Mesh in x object file " + FileName);
+
+											{
+												// collect material templates
+												int mn = Materials.Length;
+												Array.Resize<Material>(ref Materials, mn + nMaterials);
+												for (int k = 0; k < nMaterials; k++)
+												{
+													Materials[mn + k].faceColor = new Color32(255, 255, 255, 255);
+													Materials[mn + k].specularColor = new Color24(0, 0, 0);
+													Materials[mn + k].emissiveColor = new Color24(0, 0, 0);
+													Materials[mn + k].TextureFilename = null;
+												}
+												int MaterialIndex = mn;
+												for (int k = 3; k < g.Data.Length; k++)
+												{
+													Structure h = g.Data[k] as Structure;
+													if (h == null)
+													{
+														Interface.AddMessage(Interface.MessageType.Error, false, "Unexpected inlined argument encountered in MeshMaterialList in Mesh in x object file " + FileName);
 														return false;
 													}
-													Structure faceColor = (Structure)h.Data[0];
-													Structure specularColor = (Structure)h.Data[2];
-													Structure emissiveColor = (Structure)h.Data[3];
-													double red, green, blue, alpha;
-													// collect face color
-													if (faceColor.Name != "Color32") {
-														Interface.AddMessage(Interface.MessageType.Error, false, "faceColor is expected to be a Color32 in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													} else if (faceColor.Data.Length != 4) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "faceColor is expected to have 4 arguments in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													} else if (!(faceColor.Data[0] is double)) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "red is expected to be a float in faceColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													} else if (!(faceColor.Data[1] is double)) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "green is expected to be a float in faceColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													} else if (!(faceColor.Data[2] is double)) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "blue is expected to be a float in faceColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													} else if (!(faceColor.Data[3] is double)) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "alpha is expected to be a float in faceColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
+													else if (h.Name != "Material")
+													{
+														Interface.AddMessage(Interface.MessageType.Error, false, "Material template expected in MeshMaterialList in Mesh in x object file " + FileName);
 														return false;
 													}
-													red = (double)faceColor.Data[0];
-													green = (double)faceColor.Data[1];
-													blue = (double)faceColor.Data[2];
-													alpha = (double)faceColor.Data[3];
-													if (red < 0.0 | red > 1.0) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "red is expected to be in the range from 0.0 to 1.0 in faceColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														red = red < 0.5 ? 0.0 : 1.0;
-													}
-													if (green < 0.0 | green > 1.0) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "green is expected to be in the range from 0.0 to 1.0 in faceColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														green = green < 0.5 ? 0.0 : 1.0;
-													}
-													if (blue < 0.0 | blue > 1.0) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "blue is expected to be in the range from 0.0 to 1.0 in faceColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														blue = blue < 0.5 ? 0.0 : 1.0;
-													}
-													if (alpha < 0.0 | alpha > 1.0) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "alpha is expected to be in the range from 0.0 to 1.0 in faceColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														alpha = alpha < 0.5 ? 0.0 : 1.0;
-													}
-													Materials[MaterialIndex].faceColor = new Color32((byte)Math.Round(255.0 * red), (byte)Math.Round(255.0 * green), (byte)Math.Round(255.0 * blue), (byte)Math.Round(255.0 * alpha));
-													// collect specular color
-													if (specularColor.Name != "Color24") {
-														Interface.AddMessage(Interface.MessageType.Error, false, "specularColor is expected to be a Color24 in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													} else if (specularColor.Data.Length != 3) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "specularColor is expected to have 3 arguments in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													} else if (!(specularColor.Data[0] is double)) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "red is expected to be a float in specularColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													} else if (!(specularColor.Data[1] is double)) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "green is expected to be a float in specularColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													} else if (!(specularColor.Data[2] is double)) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "blue is expected to be a float in specularColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													}
-													red = (double)specularColor.Data[0];
-													green = (double)specularColor.Data[1];
-													blue = (double)specularColor.Data[2];
-													if (red < 0.0 | red > 1.0) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "red is expected to be in the range from 0.0 to 1.0 in specularColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														red = red < 0.5 ? 0.0 : 1.0;
-													}
-													if (green < 0.0 | green > 1.0) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "green is expected to be in the range from 0.0 to 1.0 in specularColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														green = green < 0.5 ? 0.0 : 1.0;
-													}
-													if (blue < 0.0 | blue > 1.0) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "blue is expected to be in the range from 0.0 to 1.0 in specularColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														blue = blue < 0.5 ? 0.0 : 1.0;
-													}
-													Materials[MaterialIndex].specularColor = new Color24((byte)Math.Round(255.0 * red), (byte)Math.Round(255.0 * green), (byte)Math.Round(255.0 * blue));
-													// collect emissive color
-													if (emissiveColor.Name != "Color24") {
-														Interface.AddMessage(Interface.MessageType.Error, false, "emissiveColor is expected to be a Color32 in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													} else if (emissiveColor.Data.Length != 3) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "emissiveColor is expected to have 3 arguments in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													} else if (!(emissiveColor.Data[0] is double)) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "red is expected to be a float in emissiveColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													} else if (!(emissiveColor.Data[1] is double)) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "green is expected to be a float in emissiveColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													} else if (!(emissiveColor.Data[2] is double)) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "blue is expected to be a float in emissiveColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														return false;
-													}
-													red = (double)emissiveColor.Data[0];
-													green = (double)emissiveColor.Data[1];
-													blue = (double)emissiveColor.Data[2];
-													if (red < 0.0 | red > 1.0) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "red is expected to be in the range from 0.0 to 1.0 in emissiveColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														red = red < 0.5 ? 0.0 : 1.0;
-													}
-													if (green < 0.0 | green > 1.0) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "green is expected to be in the range from 0.0 to 1.0 in emissiveColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														green = green < 0.5 ? 0.0 : 1.0;
-													}
-													if (blue < 0.0 | blue > 1.0) {
-														Interface.AddMessage(Interface.MessageType.Error, false, "blue is expected to be in the range from 0.0 to 1.0 in emissiveColor in Material in MeshMaterialList in Mesh in x object file " + FileName);
-														blue = blue < 0.5 ? 0.0 : 1.0;
-													}
-													Materials[MaterialIndex].emissiveColor = new Color24((byte)Math.Round(255.0 * red), (byte)Math.Round(255.0 * green), (byte)Math.Round(255.0 * blue));
-													// collect additional templates
-													for (int l = 4; l < h.Data.Length; l++) {
-														Structure e = h.Data[l] as Structure;
-														if (e == null) {
-															Interface.AddMessage(Interface.MessageType.Error, false, "Unexpected inlined argument encountered in Material in MeshMaterialList in Mesh in x object file " + FileName);
+													else
+													{
+														// material
+														if (h.Data.Length < 4)
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "Material is expected to have at least 4 arguments in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
 															return false;
 														}
-														switch (e.Name) {
-															case "TextureFilename":
-																{
-																	// texturefilename
-																	if (e.Data.Length != 1) {
-																		Interface.AddMessage(Interface.MessageType.Error, false, "filename is expected to have 1 argument in TextureFilename in Material in MeshMaterialList in Mesh in x object file " + FileName);
-																		return false;
-																	} else if (!(e.Data[0] is string)) {
-																		Interface.AddMessage(Interface.MessageType.Error, false, "filename is expected to be a string in TextureFilename in Material in MeshMaterialList in Mesh in x object file " + FileName);
-																		return false;
-																	}
-																	string filename = (string)e.Data[0];
-																	if (Interface.ContainsInvalidPathChars(filename)) {
-																		Interface.AddMessage(Interface.MessageType.Error, false, "filename contains illegal characters in TextureFilename in Material in MeshMaterialList in Mesh in x object file " + FileName);
-																	} else {
-																		string File = OpenBveApi.Path.CombineFile(System.IO.Path.GetDirectoryName(FileName), filename);
-																		if (System.IO.File.Exists(File)) {
-																			Materials[MaterialIndex].TextureFilename = File;
-																		} else {
-																			Interface.AddMessage(Interface.MessageType.Error, true, "The texture file " + File + " could not be found in TextureFilename in Material in MeshMaterialList in Mesh in x object file " + FileName);
+														else if (!(h.Data[0] is Structure))
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "faceColor is expected to be a ColorRGBA in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														else if (!(h.Data[1] is double))
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "power is expected to be a float in Material in MeshMaterialList in Mesh in x object file " + FileName);
+															return false;
+														}
+														else if (!(h.Data[2] is Structure))
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "specularColor is expected to be a ColorRGBA in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														else if (!(h.Data[3] is Structure))
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "emissiveColor is expected to be a ColorRGBA in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														Structure faceColor = (Structure)h.Data[0];
+														Structure specularColor = (Structure)h.Data[2];
+														Structure emissiveColor = (Structure)h.Data[3];
+														double red, green, blue, alpha;
+														// collect face color
+														if (faceColor.Name != "ColorRGBA")
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "faceColor is expected to be a ColorRGBA in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														else if (faceColor.Data.Length != 4)
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "faceColor is expected to have 4 arguments in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														else if (!(faceColor.Data[0] is double))
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "red is expected to be a float in faceColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														else if (!(faceColor.Data[1] is double))
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "green is expected to be a float in faceColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														else if (!(faceColor.Data[2] is double))
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "blue is expected to be a float in faceColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														else if (!(faceColor.Data[3] is double))
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "alpha is expected to be a float in faceColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														red = (double)faceColor.Data[0];
+														green = (double)faceColor.Data[1];
+														blue = (double)faceColor.Data[2];
+														alpha = (double)faceColor.Data[3];
+														if (red < 0.0 | red > 1.0)
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "red is expected to be in the range from 0.0 to 1.0 in faceColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															red = red < 0.5 ? 0.0 : 1.0;
+														}
+														if (green < 0.0 | green > 1.0)
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "green is expected to be in the range from 0.0 to 1.0 in faceColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															green = green < 0.5 ? 0.0 : 1.0;
+														}
+														if (blue < 0.0 | blue > 1.0)
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "blue is expected to be in the range from 0.0 to 1.0 in faceColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															blue = blue < 0.5 ? 0.0 : 1.0;
+														}
+														if (alpha < 0.0 | alpha > 1.0)
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "alpha is expected to be in the range from 0.0 to 1.0 in faceColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															alpha = alpha < 0.5 ? 0.0 : 1.0;
+														}
+														Materials[MaterialIndex].faceColor = new Color32((byte)Math.Round(255.0 * red),
+															(byte)Math.Round(255.0 * green), (byte)Math.Round(255.0 * blue), (byte)Math.Round(255.0 * alpha));
+														// collect specular color
+														if (specularColor.Name != "ColorRGB")
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "specularColor is expected to be a ColorRGB in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														else if (specularColor.Data.Length != 3)
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "specularColor is expected to have 3 arguments in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														else if (!(specularColor.Data[0] is double))
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "red is expected to be a float in specularColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														else if (!(specularColor.Data[1] is double))
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "green is expected to be a float in specularColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														else if (!(specularColor.Data[2] is double))
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "blue is expected to be a float in specularColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														red = (double)specularColor.Data[0];
+														green = (double)specularColor.Data[1];
+														blue = (double)specularColor.Data[2];
+														if (red < 0.0 | red > 1.0)
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "red is expected to be in the range from 0.0 to 1.0 in specularColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															red = red < 0.5 ? 0.0 : 1.0;
+														}
+														if (green < 0.0 | green > 1.0)
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "green is expected to be in the range from 0.0 to 1.0 in specularColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															green = green < 0.5 ? 0.0 : 1.0;
+														}
+														if (blue < 0.0 | blue > 1.0)
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "blue is expected to be in the range from 0.0 to 1.0 in specularColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															blue = blue < 0.5 ? 0.0 : 1.0;
+														}
+														Materials[MaterialIndex].specularColor = new Color24((byte)Math.Round(255.0 * red),
+															(byte)Math.Round(255.0 * green), (byte)Math.Round(255.0 * blue));
+														// collect emissive color
+														if (emissiveColor.Name != "ColorRGB")
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "emissiveColor is expected to be a ColorRGBA in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														else if (emissiveColor.Data.Length != 3)
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "emissiveColor is expected to have 3 arguments in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														else if (!(emissiveColor.Data[0] is double))
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "red is expected to be a float in emissiveColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														else if (!(emissiveColor.Data[1] is double))
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "green is expected to be a float in emissiveColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														else if (!(emissiveColor.Data[2] is double))
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "blue is expected to be a float in emissiveColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															return false;
+														}
+														red = (double)emissiveColor.Data[0];
+														green = (double)emissiveColor.Data[1];
+														blue = (double)emissiveColor.Data[2];
+														if (red < 0.0 | red > 1.0)
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "red is expected to be in the range from 0.0 to 1.0 in emissiveColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															red = red < 0.5 ? 0.0 : 1.0;
+														}
+														if (green < 0.0 | green > 1.0)
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "green is expected to be in the range from 0.0 to 1.0 in emissiveColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															green = green < 0.5 ? 0.0 : 1.0;
+														}
+														if (blue < 0.0 | blue > 1.0)
+														{
+															Interface.AddMessage(Interface.MessageType.Error, false, "blue is expected to be in the range from 0.0 to 1.0 in emissiveColor in Material in MeshMaterialList in Mesh in x object file " +
+																FileName);
+															blue = blue < 0.5 ? 0.0 : 1.0;
+														}
+														Materials[MaterialIndex].emissiveColor = new Color24((byte)Math.Round(255.0 * red),
+															(byte)Math.Round(255.0 * green), (byte)Math.Round(255.0 * blue));
+														// collect additional templates
+														for (int l = 4; l < h.Data.Length; l++)
+														{
+															Structure e = h.Data[l] as Structure;
+															if (e == null)
+															{
+																Interface.AddMessage(Interface.MessageType.Error, false, "Unexpected inlined argument encountered in Material in MeshMaterialList in Mesh in x object file " +
+																	FileName);
+																return false;
+															}
+															switch (e.Name)
+															{
+																case "TextureFilename":
+																	{
+																		// texturefilename
+																		if (e.Data.Length != 1)
+																		{
+																			Interface.AddMessage(Interface.MessageType.Error, false, "filename is expected to have 1 argument in TextureFilename in Material in MeshMaterialList in Mesh in x object file " +
+																				FileName);
+																			return false;
+																		}
+																		else if (!(e.Data[0] is string))
+																		{
+																			Interface.AddMessage(Interface.MessageType.Error, false, "filename is expected to be a string in TextureFilename in Material in MeshMaterialList in Mesh in x object file " +
+																				FileName);
+																			return false;
+																		}
+																		string filename = (string)e.Data[0];
+																		if (Interface.ContainsInvalidPathChars(filename))
+																		{
+																			Interface.AddMessage(Interface.MessageType.Error, false, "filename contains illegal characters in TextureFilename in Material in MeshMaterialList in Mesh in x object file " +
+																				FileName);
+																		}
+																		else
+																		{
+																			string File = OpenBveApi.Path.CombineFile(System.IO.Path.GetDirectoryName(FileName), filename);
+																			if (System.IO.File.Exists(File))
+																			{
+																				Materials[MaterialIndex].TextureFilename = File;
+																			}
+																			else
+																			{
+																				Interface.AddMessage(Interface.MessageType.Error, true, "The texture file " + File + " could not be found in TextureFilename in Material in MeshMaterialList in Mesh in x object file " +
+																					FileName);
+																			}
 																		}
 																	}
-																} break;
-															default:
-																// unknown
-																Interface.AddMessage(Interface.MessageType.Warning, false, "Unsupported template " + e.Name + " encountered in MeshMaterialList in Mesh in x object file " + FileName);
-																break;
+																	break;
+																default:
+																	// unknown
+																	Interface.AddMessage(Interface.MessageType.Warning, false, "Unsupported template " + e.Name + " encountered in MeshMaterialList in Mesh in x object file " +
+																		FileName);
+																	break;
+															}
 														}
+														// finish
+														MaterialIndex++;
 													}
-													// finish
-													MaterialIndex++;
 												}
-											} if (MaterialIndex != mn + nMaterials) {
-												Interface.AddMessage(Interface.MessageType.Error, false, "nMaterials does not match the number of Material templates encountered in Material in MeshMaterialList in Mesh in x object file " + FileName);
-												return false;
+												if (MaterialIndex != mn + nMaterials)
+												{
+													Interface.AddMessage(Interface.MessageType.Error, false, "nMaterials does not match the number of Material templates encountered in Material in MeshMaterialList in Mesh in x object file " +
+														FileName);
+													return false;
+												}
 											}
 											// assign materials
-											for (int k = 0; k < nFaceIndexes; k++) {
+											for (int k = 0; k < nFaceIndexes; k++)
+											{
 												FaceMaterials[k] = faceIndexes[k];
 											}
-											if (nMaterials != 0) {
-												for (int k = 0; k < nFaces; k++) {
-													if (FaceMaterials[k] == -1) {
+											if (nMaterials != 0)
+											{
+												for (int k = 0; k < nFaces; k++)
+												{
+													if (FaceMaterials[k] == -1)
+													{
 														FaceMaterials[k] = 0;
 													}
 												}
@@ -1433,33 +1760,47 @@ namespace OpenBve {
 									case "MeshTextureCoords":
 										{
 											// meshtexturecoords
-											if (g.Data.Length != 2) {
+											if (g.Data.Length != 2)
+											{
 												Interface.AddMessage(Interface.MessageType.Error, false, "MeshTextureCoords is expected to have 2 arguments in Mesh in x object file " + FileName);
 												return false;
-											} else if (!(g.Data[0] is int)) {
+											}
+											else if (!(g.Data[0] is int))
+											{
 												Interface.AddMessage(Interface.MessageType.Error, false, "nTextureCoords is expected to be a DWORD in MeshTextureCoords in Mesh in x object file " + FileName);
 												return false;
-											} else if (!(g.Data[1] is Structure[])) {
+											}
+											else if (!(g.Data[1] is Structure[]))
+											{
 												Interface.AddMessage(Interface.MessageType.Error, false, "textureCoords[nTextureCoords] is expected to be a Coords2d array in MeshTextureCoords in Mesh in x object file " + FileName);
 												return false;
 											}
 											int nTextureCoords = (int)g.Data[0];
 											Structure[] textureCoords = (Structure[])g.Data[1];
-											if (nTextureCoords < 0 | nTextureCoords > nVertices) {
+											if (nTextureCoords < 0 | nTextureCoords > nVertices)
+											{
 												Interface.AddMessage(Interface.MessageType.Error, false, "nTextureCoords does not reference valid vertices in MeshTextureCoords in Mesh in x object file " + FileName);
 												return false;
 											}
-											for (int k = 0; k < nTextureCoords; k++) {
-												if (textureCoords[k].Name != "Coords2d") {
+											for (int k = 0; k < nTextureCoords; k++)
+											{
+												if (textureCoords[k].Name != "Coords2d")
+												{
 													Interface.AddMessage(Interface.MessageType.Error, false, "textureCoords[" + k.ToString(Culture) + "] is expected to be a Coords2d in MeshTextureCoords in Mesh in x object file " + FileName);
 													return false;
-												} else if (textureCoords[k].Data.Length != 2) {
+												}
+												else if (textureCoords[k].Data.Length != 2)
+												{
 													Interface.AddMessage(Interface.MessageType.Error, false, "textureCoords[" + k.ToString(Culture) + "] is expected to have 2 arguments in MeshTextureCoords in Mesh in x object file " + FileName);
 													return false;
-												} else if (!(textureCoords[k].Data[0] is double)) {
+												}
+												else if (!(textureCoords[k].Data[0] is double))
+												{
 													Interface.AddMessage(Interface.MessageType.Error, false, "u is expected to be a float in textureCoords[" + k.ToString(Culture) + "] in MeshTextureCoords in Mesh in x object file " + FileName);
 													return false;
-												} else if (!(textureCoords[k].Data[1] is double)) {
+												}
+												else if (!(textureCoords[k].Data[1] is double))
+												{
 													Interface.AddMessage(Interface.MessageType.Error, false, "v is expected to be a float in textureCoords[" + k.ToString(Culture) + "] in MeshTextureCoords in Mesh in x object file " + FileName);
 													return false;
 												}
@@ -1471,58 +1812,81 @@ namespace OpenBve {
 									case "MeshNormals":
 										{
 											// meshnormals
-											if (g.Data.Length != 4) {
+											if (g.Data.Length != 4)
+											{
 												Interface.AddMessage(Interface.MessageType.Error, false, "MeshNormals is expected to have 4 arguments in Mesh in x object file " + FileName);
 												return false;
-											} else if (!(g.Data[0] is int)) {
+											}
+											else if (!(g.Data[0] is int))
+											{
 												Interface.AddMessage(Interface.MessageType.Error, false, "nNormals is expected to be a DWORD in MeshNormals in Mesh in x object file " + FileName);
 												return false;
-											} else if (!(g.Data[1] is Structure[])) {
+											}
+											else if (!(g.Data[1] is Structure[]))
+											{
 												Interface.AddMessage(Interface.MessageType.Error, false, "normals is expected to be a Vector array in MeshNormals in Mesh in x object file " + FileName);
 												return false;
-											} else if (!(g.Data[2] is int)) {
+											}
+											else if (!(g.Data[2] is int))
+											{
 												Interface.AddMessage(Interface.MessageType.Error, false, "nFaceNormals is expected to be a DWORD in MeshNormals in Mesh in x object file " + FileName);
 												return false;
-											} else if (!(g.Data[3] is Structure[])) {
+											}
+											else if (!(g.Data[3] is Structure[]))
+											{
 												Interface.AddMessage(Interface.MessageType.Error, false, "faceNormals is expected to be a MeshFace array in MeshNormals in Mesh in x object file " + FileName);
 												return false;
 											}
 											int nNormals = (int)g.Data[0];
-											if (nNormals < 0) {
+											if (nNormals < 0)
+											{
 												Interface.AddMessage(Interface.MessageType.Error, false, "nNormals is expected to be non-negative in MeshNormals in Mesh in x object file " + FileName);
 												return false;
 											}
 											Structure[] normals = (Structure[])g.Data[1];
-											if (nNormals != normals.Length) {
+											if (nNormals != normals.Length)
+											{
 												Interface.AddMessage(Interface.MessageType.Error, false, "nNormals does not match with the length of array normals in MeshNormals in Mesh in x object file " + FileName);
 												return false;
 											}
 											int nFaceNormals = (int)g.Data[2];
-											if (nFaceNormals < 0 | nFaceNormals > nFaces) {
+											if (nFaceNormals < 0 | nFaceNormals > nFaces)
+											{
 												Interface.AddMessage(Interface.MessageType.Error, false, "nNormals does not reference valid vertices in MeshNormals in Mesh in x object file " + FileName);
 												return false;
 											}
 											Structure[] faceNormals = (Structure[])g.Data[3];
-											if (nFaceNormals != faceNormals.Length) {
+											if (nFaceNormals != faceNormals.Length)
+											{
 												Interface.AddMessage(Interface.MessageType.Error, false, "nFaceNormals does not match with the length of array faceNormals in MeshNormals in Mesh in x object file " + FileName);
 												return false;
 											}
 											// collect normals
 											Vector3[] Normals = new Vector3[nNormals];
-											for (int k = 0; k < nNormals; k++) {
-												if (normals[k].Name != "Vector") {
+											for (int k = 0; k < nNormals; k++)
+											{
+												if (normals[k].Name != "Vector")
+												{
 													Interface.AddMessage(Interface.MessageType.Error, false, "normals[" + k.ToString(Culture) + "] is expected to be of template Vertex in MeshNormals in Mesh in x object file " + FileName);
 													return false;
-												} else if (normals[k].Data.Length != 3) {
+												}
+												else if (normals[k].Data.Length != 3)
+												{
 													Interface.AddMessage(Interface.MessageType.Error, false, "normals[" + k.ToString(Culture) + "] is expected to have 3 arguments in MeshNormals in Mesh in x object file " + FileName);
 													return false;
-												} else if (!(normals[k].Data[0] is double)) {
+												}
+												else if (!(normals[k].Data[0] is double))
+												{
 													Interface.AddMessage(Interface.MessageType.Error, false, "x is expected to be a float in normals[" + k.ToString(Culture) + "] in MeshNormals in Mesh in x object file " + FileName);
 													return false;
-												} else if (!(normals[k].Data[1] is double)) {
+												}
+												else if (!(normals[k].Data[1] is double))
+												{
 													Interface.AddMessage(Interface.MessageType.Error, false, "y is expected to be a float in normals[" + k.ToString(Culture) + " ]in MeshNormals in Mesh in x object file " + FileName);
 													return false;
-												} else if (!(normals[k].Data[2] is double)) {
+												}
+												else if (!(normals[k].Data[2] is double))
+												{
 													Interface.AddMessage(Interface.MessageType.Error, false, "z is expected to be a float in normals[" + k.ToString(Culture) + "] in MeshNormals in Mesh in x object file " + FileName);
 													return false;
 												}
@@ -1533,32 +1897,44 @@ namespace OpenBve {
 												Normals[k] = new Vector3((float)x, (float)y, (float)z);
 											}
 											// collect faces
-											for (int k = 0; k < nFaceNormals; k++) {
-												if (faceNormals[k].Name != "MeshFace") {
+											for (int k = 0; k < nFaceNormals; k++)
+											{
+												if (faceNormals[k].Name != "MeshFace")
+												{
 													Interface.AddMessage(Interface.MessageType.Error, false, "faceNormals[" + k.ToString(Culture) + "] is expected to be of template MeshFace in MeshNormals in Mesh in x object file " + FileName);
 													return false;
-												} else if (faceNormals[k].Data.Length != 2) {
+												}
+												else if (faceNormals[k].Data.Length != 2)
+												{
 													Interface.AddMessage(Interface.MessageType.Error, false, "faceNormals[" + k.ToString(Culture) + "] is expected to have 2 arguments in MeshNormals in Mesh in x object file " + FileName);
 													return false;
-												} else if (!(faceNormals[k].Data[0] is int)) {
+												}
+												else if (!(faceNormals[k].Data[0] is int))
+												{
 													Interface.AddMessage(Interface.MessageType.Error, false, "nFaceVertexIndices is expected to be a DWORD in faceNormals[" + k.ToString(Culture) + "] in MeshNormals in Mesh in x object file " + FileName);
 													return false;
-												} else if (!(faceNormals[k].Data[1] is int[])) {
+												}
+												else if (!(faceNormals[k].Data[1] is int[]))
+												{
 													Interface.AddMessage(Interface.MessageType.Error, false, "faceVertexIndices[nFaceVertexIndices] is expected to be a DWORD array in faceNormals[" + k.ToString(Culture) + "] in MeshNormals in Mesh in x object file " + FileName);
 													return false;
 												}
 												int nFaceVertexIndices = (int)faceNormals[k].Data[0];
-												if (nFaceVertexIndices < 0 | nFaceVertexIndices > Faces[k].Length) {
+												if (nFaceVertexIndices < 0 | nFaceVertexIndices > Faces[k].Length)
+												{
 													Interface.AddMessage(Interface.MessageType.Error, false, "nFaceVertexIndices does not reference a valid vertex in MeshFace in MeshNormals in Mesh in x object file " + FileName);
 													return false;
 												}
 												int[] faceVertexIndices = (int[])faceNormals[k].Data[1];
-												if (nFaceVertexIndices != faceVertexIndices.Length) {
+												if (nFaceVertexIndices != faceVertexIndices.Length)
+												{
 													Interface.AddMessage(Interface.MessageType.Error, false, "nFaceVertexIndices does not match with the length of array faceVertexIndices in faceNormals[" + k.ToString(Culture) + "] in MeshFace in MeshNormals in Mesh in x object file " + FileName);
 													return false;
 												}
-												for (int l = 0; l < nFaceVertexIndices; l++) {
-													if (faceVertexIndices[l] < 0 | faceVertexIndices[l] >= nNormals) {
+												for (int l = 0; l < nFaceVertexIndices; l++)
+												{
+													if (faceVertexIndices[l] < 0 | faceVertexIndices[l] >= nNormals)
+													{
 														Interface.AddMessage(Interface.MessageType.Error, false, "faceVertexIndices[" + l.ToString(Culture) + "] does not reference a valid normal in faceNormals[" + k.ToString(Culture) + "] in MeshFace in MeshNormals in Mesh in x object file " + FileName);
 														return false;
 													}
