@@ -43,7 +43,8 @@ namespace OpenBve
 		{
 			Arcade = 0,
 			Normal = 1,
-			Expert = 2
+			Expert = 2,
+			Developer = 3
 		}
 		internal enum InterpolationMode
 		{

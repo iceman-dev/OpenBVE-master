@@ -538,6 +538,13 @@ namespace OpenBve
 										Game.Menu.PushMenu(Menu.MenuType.Quit);
 										break;
 									case Interface.Command.CameraInterior:
+										if (Interface.CurrentOptions.GameMode == Interface.GameMode.Developer)
+										{
+											Game.AddMessage("Interior camera is unavailable in Route Viewer mode.",
+												MessageManager.MessageDependency.CameraView, Interface.GameMode.Developer,
+												MessageColor.White, Game.SecondsSinceMidnight + 2.0, null);
+											return;
+										}
 										// camera: interior
 										SaveCameraSettings();
 										bool lookahead = false;
@@ -915,6 +922,12 @@ namespace OpenBve
 										break;
 									case Interface.Command.CameraReset:
 										// camera: reset
+										if (Interface.CurrentOptions.GameMode == Interface.GameMode.Developer)
+										{
+											World.CameraSavedExterior = new World.CameraAlignment(new OpenBveApi.Math.Vector3(0, 2.5, -5.0), 0.0, 0.0, 0.0, World.CameraTrackFollower.TrackPosition, 1.0);
+											World.CameraCurrentAlignment = World.CameraSavedExterior;
+											return;
+										}
 										if (World.CameraMode == World.CameraViewMode.Interior |
 											World.CameraMode == World.CameraViewMode.InteriorLookAhead)
 										{
