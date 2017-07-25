@@ -89,6 +89,10 @@ namespace OpenBve
 						string itm = Lines[i].Substring(0, fob).Trim().ToLowerInvariant();
 						string data = Lines[i].Substring(fob + 1, fcb - fob - 1).Trim();
 						data = data.Replace(@"\\", @"\");
+						if (data[0] == '"' && data[data.Length -1] == '"')
+						{
+							data = data.Substring(1, data.Length - 2);
+						}
 						switch (CurrentLevel)
 						{
 							case 0:
@@ -103,13 +107,11 @@ namespace OpenBve
 									case ComponentType.None:
 										throw new InvalidDataException();
 									case ComponentType.Dial:
-										ParseDialData(Folder, itm, data, ref currentComponent);
-										break;
 									case ComponentType.Lever:
-										ParseLeverData(Folder, itm, data, ref currentComponent);
-										break;
+									case ComponentType.CabSignalDisplay:
+									case ComponentType.TwoState:
 									case ComponentType.TriState:
-										ParseTriStateData(Folder, itm, data, ref currentComponent);
+										ParseComponentData(Folder, itm, data, ref currentComponent);
 										break;
 								}
 								break;
@@ -129,8 +131,17 @@ namespace OpenBve
 							case "lever":
 								currentComponent.Type = ComponentType.Lever;
 								break;
+							case "twostate":
+								currentComponent.Type = ComponentType.TriState;
+								break;
 							case "tristate":
 								currentComponent.Type = ComponentType.TriState;
+								break;
+							case "multistatedisplay":
+								currentComponent.Type = ComponentType.MultiStateDisplay;
+								break;
+							case "cabsignaldisplay":
+								currentComponent.Type = ComponentType.CabSignalDisplay;
 								break;
 						}
 					}
@@ -242,7 +253,6 @@ namespace OpenBve
 							//MSTS cab dials are backstopped as standard
 							Train.Cars[Train.DriverCar].CarSections[0].Elements[j].RotateZFunction.Minimum = cabComponents[i].InitialAngle;
 							Train.Cars[Train.DriverCar].CarSections[0].Elements[j].RotateZFunction.Maximum = cabComponents[i].LastAngle;
-							
 							break;
 						case ComponentType.Lever:
 							cabComponents[i].Position.X *= rW;
@@ -280,6 +290,7 @@ namespace OpenBve
 							}
 							break;
 						case ComponentType.TriState:
+						case ComponentType.TwoState:
 							cabComponents[i].Position.X *= rW;
 							cabComponents[i].Position.Y *= rH;
 							Program.CurrentHost.QueryTextureDimensions(cabComponents[i].TexturePath, out wday, out hday);
@@ -309,7 +320,8 @@ namespace OpenBve
 									int l = CreateElement(Train, cabComponents[i].Position.X, cabComponents[i].Position.Y, cabComponents[i].Size.X * rW, cabComponents[i].Size.Y * rH, 0.5, 0.5, (double)Layer * StackDistance, PanelResolution, PanelLeft, PanelRight, PanelTop, PanelBottom, PanelBitmapWidth, PanelBitmapHeight, PanelCenterX, PanelCenterY, PanelOriginX, PanelOriginY, DriverX, DriverY, DriverZ, textures[k], null, new Color32(255, 255, 255, 255), k != 0);
 									if (k == 0) j = l;
 								}
-								f = GetStackLanguageFromSubject(Train, cabComponents[i].Units, "TriState " + " in " + File);
+								f = cabComponents[i].Type == ComponentType.TwoState ? GetStackLanguageFromSubject(Train, cabComponents[i].Units, "TwoState " + " in " + File) : GetStackLanguageFromSubject(Train, cabComponents[i].Units, "TriState " + " in " + File);
+								
 								Train.Cars[Train.DriverCar].CarSections[0].Elements[j].StateFunction = FunctionScripts.GetFunctionScriptFromPostfixNotation(f);
 							}
 							break;
@@ -413,17 +425,17 @@ namespace OpenBve
 			internal int VerticalFrames = 0;
 		}
 
-		private static void ParseDialData(string Folder, string Command, string Data, ref Component Dial)
+		private static void ParseComponentData(string Folder, string Command, string Data, ref Component Component)
 		{
 			string[] splitData;
 			switch (Command)
 			{
 				case "graphic":
 					//Loads image
-					Dial.TexturePath = OpenBveApi.Path.CombineFile(Folder, Data);
+					Component.TexturePath = OpenBveApi.Path.CombineFile(Folder, Data);
 					break;
 				case "pivot":
-					double.TryParse(Data, out Dial.PivotPoint);
+					double.TryParse(Data, out Component.PivotPoint);
 					break;
 				case "position":
 					splitData = Data.Split(' ');
@@ -432,30 +444,53 @@ namespace OpenBve
 						//Must contain 4 parameters
 						throw new InvalidDataException();
 					}
-					Double.TryParse(splitData[0], out Dial.Position.X);
-					Double.TryParse(splitData[1], out Dial.Position.Y);
-					Double.TryParse(splitData[2], out Dial.Size.X);
-					Double.TryParse(splitData[3], out Dial.Size.Y);
+					Double.TryParse(splitData[0], out Component.Position.X);
+					Double.TryParse(splitData[1], out Component.Position.Y);
+					Double.TryParse(splitData[2], out Component.Size.X);
+					Double.TryParse(splitData[3], out Component.Size.Y);
 					break;
 				case "type":
 					//Defines the subject of the dial
 					switch (Data.ToLowerInvariant())
 					{
 						case "speedometer dial":
-							Dial.Subject = Subject.Speedometer;
+							Component.Subject = Subject.Speedometer;
 							break;
 						case "brake_pipe dial":
-							Dial.Subject = Subject.BrakePipe;
+							Component.Subject = Subject.BrakePipe;
 							break;
 						case "brake_cyl dial":
-							Dial.Subject = Subject.BrakeCylinder;
+							Component.Subject = Subject.BrakeCylinder;
 							break;
 						case "ammeter dial":
-							Dial.Subject = Subject.Ammeter;
+							Component.Subject = Subject.Ammeter;
 							break;
-						//default:
-						//	NOT IMPLEMENTED ALL VARIANTS YET
-						//	throw new NotSupportedException(Data + " is not a supported subject for a Dial");
+						case "aspect_display cab_signal_display":
+							Component.Subject = Subject.AWS;
+							//This is used by UK trains to animate the AWS sunflower
+
+							//No current default support for AWS though
+							break;
+						case "horn two_state":
+							Component.Subject = Subject.Horn;
+							Component.Units = "klaxon";
+							break;
+						case "direction tri_state":
+							Component.Subject = Subject.Direction;
+							Component.Units = "rev";
+							break;
+						case "throttle lever":
+							Component.Subject = Subject.PowerHandle;
+							Component.Units = "power";
+							break;
+						case "engine_brake lever":
+							Component.Subject = Subject.EngineBrakeHandle;
+							Component.Units = "brake";
+							break;
+						case "train_brake lever":
+							Component.Subject = Subject.TrainBrakeHandle;
+							Component.Units = "brake";
+							break;
 					}
 					break;
 				case "units":
@@ -463,26 +498,26 @@ namespace OpenBve
 					switch (Data.ToLowerInvariant())
 					{
 						case "amps":
-							if (Dial.Subject != Subject.Ammeter)
+							if (Component.Subject != Subject.Ammeter)
 							{
-								throw new NotSupportedException("AMPS are not a valid unit for a dial with a subject of " + Dial.Subject);
+								throw new NotSupportedException("AMPS are not a valid unit for a dial with a subject of " + Component.Subject);
 							}
-							Dial.Units = "motor";
+							Component.Units = "motor";
 							break;
 						case "miles_per_hour":
-							Dial.Units = "mph";
+							Component.Units = "mph";
 							break;
 						case "psi":
-							switch (Dial.Subject)
+							switch (Component.Subject)
 							{
 								case Subject.BrakeCylinder:
-									Dial.Units = "bc_psi";
+									Component.Units = "bc_psi";
 									break;
 								case Subject.BrakePipe:
-									Dial.Units = "bp_psi";
+									Component.Units = "bp_psi";
 									break;
 								default:
-									throw new NotSupportedException("PSI are not a valid unit for a dial with a subject of " + Dial.Subject);
+									throw new NotSupportedException("PSI are not a valid unit for a dial with a subject of " + Component.Subject);
 
 							}
 							break;
@@ -495,14 +530,14 @@ namespace OpenBve
 						//Must contain 2 parameters
 						throw new InvalidDataException();
 					}
-					Double.TryParse(splitData[0], out Dial.InitialAngle);
-					Double.TryParse(splitData[1], out Dial.LastAngle);
+					Double.TryParse(splitData[0], out Component.InitialAngle);
+					Double.TryParse(splitData[1], out Component.LastAngle);
 					break;
 				case "scalerange":
-					if (Dial.Subject == Subject.Ammeter)
+					if (Component.Subject == Subject.Ammeter)
 					{
-						Dial.Minimum = 0;
-						Dial.Maximum = 1;
+						Component.Minimum = 0;
+						Component.Maximum = 1;
 						break;
 					}
 					splitData = Data.Split(' ');
@@ -511,52 +546,8 @@ namespace OpenBve
 						//Must contain 2 parameters
 						throw new InvalidDataException();
 					}
-					Double.TryParse(splitData[0], out Dial.Minimum);
-					Double.TryParse(splitData[1], out Dial.Maximum);
-					break;
-
-			}
-		}
-
-		private static void ParseTriStateData(string Folder, string Command, string Data, ref Component TriState)
-		{
-			string[] splitData;
-			switch (Command)
-			{
-				case "graphic":
-					//Loads image
-					TriState.TexturePath = OpenBveApi.Path.CombineFile(Folder, Data);
-					break;
-				case "position":
-					//Places within the cab, then defines the size of a frame
-					splitData = Data.Split(' ');
-					if (splitData.Length != 4)
-					{
-						//Must contain 4 parameters
-						throw new InvalidDataException();
-					}
-					//Top left X,Y
-					//Then size H,W
-					Double.TryParse(splitData[0], out TriState.Position.X);
-					Double.TryParse(splitData[1], out TriState.Position.Y);
-					Double.TryParse(splitData[2], out TriState.Size.X);
-					Double.TryParse(splitData[3], out TriState.Size.Y);
-					break;
-				case "type":
-					//Defines available subjects
-					switch (Data.ToLowerInvariant())
-					{
-						case "direction tri_state":
-							TriState.Subject = Subject.Direction;
-							TriState.Units = "rev";
-							break;
-						//default:
-						//	NOT IMPLEMENTED ALL VARIANTS YET
-						//	throw new NotSupportedException(Data + " is not a supported subject for a Lever");
-					}
-					break;
-				case "units":
-					//Defines the units in which the subject is measured on the dial
+					Double.TryParse(splitData[0], out Component.Minimum);
+					Double.TryParse(splitData[1], out Component.Maximum);
 					break;
 				case "numframes":
 					//Total number of frames, frames in H row, frames in V column
@@ -568,75 +559,9 @@ namespace OpenBve
 					}
 					//Top left X,Y
 					//Then size H,W
-					int.TryParse(splitData[0], out TriState.TotalFrames);
-					int.TryParse(splitData[1], out TriState.HorizontalFrames);
-					int.TryParse(splitData[2], out TriState.VerticalFrames);
-					break;
-
-			}
-		}
-
-		private static void ParseLeverData(string Folder, string Command, string Data, ref Component Lever)
-		{
-			string[] splitData;
-			switch (Command)
-			{
-				case "graphic":
-					//Loads image
-					Lever.TexturePath = OpenBveApi.Path.CombineFile(Folder, Data);
-					break;
-				case "position":
-					//Places within the cab, then defines the size of a frame
-					splitData = Data.Split(' ');
-					if (splitData.Length != 4)
-					{
-						//Must contain 4 parameters
-						throw new InvalidDataException();
-					}
-					//Top left X,Y
-					//Then size H,W
-					Double.TryParse(splitData[0], out Lever.Position.X);
-					Double.TryParse(splitData[1], out Lever.Position.Y);
-					Double.TryParse(splitData[2], out Lever.Size.X);
-					Double.TryParse(splitData[3], out Lever.Size.Y);
-					break;
-				case "type":
-					//Defines available subjects
-					switch (Data.ToLowerInvariant())
-					{
-						case "throttle lever":
-							Lever.Subject = Subject.PowerHandle;
-							Lever.Units = "power";
-							break;
-						case "engine_brake lever":
-							Lever.Subject = Subject.EngineBrakeHandle;
-							Lever.Units = "brake";
-							break;
-						case "train_brake lever":
-							Lever.Subject = Subject.TrainBrakeHandle;
-							Lever.Units = "brake";
-							break;
-						//default:
-						//	NOT IMPLEMENTED ALL VARIANTS YET
-						//	throw new NotSupportedException(Data + " is not a supported subject for a Lever");
-					}
-					break;
-				case "units":
-					//Defines the units in which the subject is measured on the lever
-					break;
-				case "numframes":
-					//Total number of frames, frames in H row, frames in V column
-					splitData = Data.Split(' ');
-					if (splitData.Length != 3)
-					{
-						//Must contain 4 parameters
-						throw new InvalidDataException();
-					}
-					//Top left X,Y
-					//Then size H,W
-					int.TryParse(splitData[0], out Lever.TotalFrames);
-					int.TryParse(splitData[1], out Lever.HorizontalFrames);
-					int.TryParse(splitData[2], out Lever.VerticalFrames);
+					int.TryParse(splitData[0], out Component.TotalFrames);
+					int.TryParse(splitData[1], out Component.HorizontalFrames);
+					int.TryParse(splitData[2], out Component.VerticalFrames);
 					break;
 
 			}
@@ -650,8 +575,15 @@ namespace OpenBve
 			Dial = 1,
 			/// <summary>Lever based control</summary>
 			Lever = 2,
+			/// <summary>Two-state based control</summary>
+			TwoState = 3,
 			/// <summary>Tri-state based control</summary>
-			TriState = 3
+			TriState = 4,
+			/// <summary>A display capable of displaying N states</summary>
+			MultiStateDisplay = 5,
+			/// <summary>In cab signalling / safety system (e.g. AWS)</summary>
+			CabSignalDisplay = 6
+			
 
 		}
 
@@ -664,7 +596,9 @@ namespace OpenBve
 			Direction = 4,
 			PowerHandle = 5,
 			EngineBrakeHandle = 6,
-			TrainBrakeHandle = 7
+			TrainBrakeHandle = 7,
+			Horn = 8,
+			AWS = 9
 		}
 
 
@@ -773,6 +707,9 @@ namespace OpenBve
 					break;
 				case "atc":
 					Code = "271 pluginstate";
+					break;
+				case "klaxon":
+					Code = "klaxon";
 					break;
 				default:
 				{
