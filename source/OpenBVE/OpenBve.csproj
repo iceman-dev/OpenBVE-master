@@ -139,6 +139,7 @@
     <Compile Include="Parsers\DynamicBackgroundParser.cs" />
     <Compile Include="Parsers\DynamicLightParser.cs" />
     <Compile Include="Parsers\MarkerScriptParser.cs" />
+    <Compile Include="Parsers\Panel\MSTS\CVFParser.cs" />
     <Compile Include="Parsers\SoundConfiguration\SoundCfg.Ats.cs" />
     <Compile Include="Parsers\SoundConfiguration\SoundCfg.Base.cs" />
     <Compile Include="Parsers\SoundConfiguration\SoundCfg.Bve2.cs" />
