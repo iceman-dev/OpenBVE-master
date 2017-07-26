@@ -350,25 +350,38 @@ namespace OpenBve
 		static double PanelOriginX = 0.0, PanelOriginY = 240.0;
 		static double PanelBitmapWidth = 640.0, PanelBitmapHeight = 480.0;
 
+		static int ViewsLoaded = 0;
+
 
 		private static void ParseBaseData(string Command, string Data)
 		{
+			string[] splitData = Data.Split(' ');
 			switch (Command)
 			{
 				case "cabviewtype":
 					// ?? Number to select steam and diesel ??
 					break;
 				case "cabviewfile":
-					//Loads texture
-					PanelMainImage = Data;
-					//Front, then left, then right
-
-					//Duplicate declared in CabViewWindowFile (??)
+					//Loads texture for each cab-view
+					//The first of these is the main cab-view
+					//Position and direction are then determined for the others by the following pos/ dir statements
+					switch (ViewsLoaded)
+					{
+						case 0:
+							PanelMainImage = Data;
+							break;
+						case 1:
+							HeadoutLeftImage = Data;
+							break;
+						case 2:
+							HeadoutRightImage = Data;
+							break;
+					}
+					ViewsLoaded++;
 					break;
 				case "cabviewwindow":
 					//Sets initial clip viewport
 					//Presumably xPos, yPos, hClip, vClip
-					string[] splitData = Data.Split(' ');
 					if (splitData.Length != 4)
 					{
 						//Must contain 4 parameters
@@ -394,11 +407,65 @@ namespace OpenBve
 					}
 					break;
 				case "position":
-					//Position of cab within loco
-					//Presumably X,Y,Z
+					//Sets the position of the view within the loco
+					if (splitData.Length != 3)
+					{
+						//Must contain 3 parameters
+						throw new InvalidDataException();
+					}
+					double posX, posY, posZ;
+					for (int i = 0; i < 3; i++)
+					{
+						switch (i)
+						{
+							case 0:
+								Double.TryParse(splitData[i], out posX);
+								break;
+							case 1:
+								Double.TryParse(splitData[i], out posY);
+								break;
+							case 2:
+								Double.TryParse(splitData[i], out posZ);
+								break;
+						}
+					}
+					switch (ViewsLoaded)
+					{
+						case 0:
+							break;
+						case 1:
+							break;
+						case 2:
+							break;
+					}
 					break;
 				case "direction":
-					//Dunno....
+					//Sets the rotation which must be applied (e.g. if left panel, scene to be rotated L 45deg)
+					double rotX, rotY, rotZ;
+					for (int i = 0; i < 3; i++)
+					{
+						switch (i)
+						{
+							case 0:
+								Double.TryParse(splitData[i], out rotX);
+								break;
+							case 1:
+								Double.TryParse(splitData[i], out rotY);
+								break;
+							case 2:
+								Double.TryParse(splitData[i], out rotZ);
+								break;
+						}
+					}
+					switch (ViewsLoaded)
+					{
+						case 0:
+							break;
+						case 1:
+							break;
+						case 2:
+							break;
+					}
 					break;
 				case "enginedata":
 					//Default loco folder this is associated with I think
@@ -507,7 +574,9 @@ namespace OpenBve
 						case "miles_per_hour":
 							Component.Units = "mph";
 							break;
+						case "inches_of_mercury":
 						case "psi":
+							//We don't simulate vaccum brakes, so just hook to PSI if vaccum is declared
 							switch (Component.Subject)
 							{
 								case Subject.BrakeCylinder:
