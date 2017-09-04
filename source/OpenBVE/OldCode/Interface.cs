@@ -10,6 +10,7 @@ namespace OpenBve {
 
 		// messages
 		internal enum MessageType {
+			Information,
 			Warning,
 			Error,
 			Critical

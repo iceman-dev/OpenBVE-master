@@ -135,6 +135,7 @@
     <Compile Include="Graphics\Renderer\Overlays\Overlays.Functions.cs" />
     <Compile Include="Graphics\Renderer\Overlays\Overlays.GameMessages.cs" />
     <Compile Include="Graphics\Renderer\Overlays\Overlays.HUD.cs" />
+    <Compile Include="Graphics\Renderer\Overlays\Overlays.RouteViewer.cs" />
     <Compile Include="Graphics\Renderer\Overlays\Overlays.ScoreMessages.cs" />
     <Compile Include="Graphics\Renderer\Structures.cs" />
     <Compile Include="Graphics\Renderer\Objects.cs" />

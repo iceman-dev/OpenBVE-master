@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using OpenBveApi.Colors;
 using OpenTK;
 using OpenTK.Graphics;
@@ -184,5 +185,31 @@ namespace OpenBve
                 Interface.CurrentOptions.AnisotropicFilteringLevel = Interface.CurrentOptions.AnisotropicFilteringMaximum;
             }
         }
-    }
+
+		/// <summary>Renders a key overlay</summary>
+		/// <param name="Left">The left pixel</param>
+		/// <param name="Top">The top pixel</param>
+		/// <param name="Width">The width</param>
+		/// <param name="Keys">The key strings to render</param>
+	    private static void RenderKeys(int Left, int Top, int Width, string[][] Keys)
+	    {
+		    int py = Top;
+		    for (int y = 0; y < Keys.Length; y++)
+		    {
+			    int px = Left;
+			    for (int x = 0; x < Keys[y].Length; x++)
+			    {
+				    if (Keys[y][x] != null)
+				    {
+					    DrawRectangle(null, new Point(px - 1, py - 1), new Size(Width + 1, 17), new Color128(0.25f, 0.25f, 0.25f, 0.5f));
+					    DrawRectangle(null, new Point(px - 1, py - 1), new Size(Width - 1, 15), new Color128(0.75f, 0.75f, 0.75f, 0.5f));
+					    DrawRectangle(null, new Point(px, py), new Size(Width, 16), new Color128(0.5f, 0.5f, 0.5f, 0.5f));
+					    DrawString(Fonts.SmallFont, Keys[y][x], new Point(px - 1 + Width / 2, py + 7), TextAlignment.CenterMiddle, Color128.White);
+				    }
+				    px += Width + 4;
+			    }
+			    py += 20;
+		    }
+	    }
+	}
 }

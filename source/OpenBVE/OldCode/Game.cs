@@ -3,8 +3,19 @@ using OpenBveApi.Colors;
 using OpenBveApi.Math;
 
 namespace OpenBve {
-	internal static partial class Game {
+	internal static partial class Game
+	{
+		internal static bool JumpToPositionEnabled = false;
 
+		internal static double MinimumJumpToPositionValue = 0.0;
+
+		internal static string JumpToPositionValue = string.Empty;
+
+		internal static bool ShiftPressed = false;
+
+		internal static bool ControlPressed = false;
+
+		internal static bool AltPressed = false;
 		// date and time
         /// <summary>The current in game time, expressed as the number of seconds since midnight on the first day</summary>
 		internal static double SecondsSinceMidnight = 0.0;

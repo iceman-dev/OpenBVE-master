@@ -54,6 +54,7 @@ namespace OpenBve {
 			Game.RouteInformation.ErrorsAndWarnings = null;
 			Loader = new Thread(LoadThreaded) {IsBackground = true};
 			Loader.Start();
+			Interface.CurrentOptions.GameMode = Interface.GameMode.Developer;
 		}
 
 		/// <summary>Gets the absolute Railway folder for a given route file</summary>
