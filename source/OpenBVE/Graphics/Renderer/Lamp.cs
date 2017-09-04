@@ -96,7 +96,8 @@ namespace OpenBve
             internal Lamp[] Lamps;
             internal float Width;
         }
-        private static LampCollection CurrentLampCollection;
+
+	    private static LampCollection CurrentLampCollection;
 
 		/// <summary>Initialises the ATS lamps for train using one of the default safety systems</summary>
         private static void InitializeLamps()
