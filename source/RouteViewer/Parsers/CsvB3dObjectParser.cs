@@ -74,7 +74,7 @@ namespace OpenBve {
 		/// <param name="ForceTextureRepeatX">Whether to force TextureWrapMode.Repeat for referenced textures on the X-axis.</param>
 		/// <param name="ForceTextureRepeatY">Whether to force TextureWrapMode.Repeat for referenced textures on the Y-axis.</param>
 		/// <returns>The object loaded.</returns>
-		internal static ObjectManager.StaticObject ReadObject(string FileName, System.Text.Encoding Encoding, ObjectManager.ObjectLoadMode LoadMode, bool ForceTextureRepeatX, bool ForceTextureRepeatY) {
+		internal static ObjectManager.StaticObject ReadObject(string FileName, System.Text.Encoding Encoding, ObjectManager.ObjectLoadMode LoadMode, bool ForceTextureRepeatX, bool ForceTextureRepeatY, string[] Lines = null) {
 			System.Globalization.CultureInfo Culture = System.Globalization.CultureInfo.InvariantCulture;
 			bool IsB3D = string.Equals(System.IO.Path.GetExtension(FileName), ".b3d", StringComparison.OrdinalIgnoreCase);
 			// initialize object
@@ -83,7 +83,15 @@ namespace OpenBve {
 			Object.Mesh.Materials = new World.MeshMaterial[] { };
 			Object.Mesh.Vertices = new World.Vertex[] { };
 			// read lines
-			string[] Lines = System.IO.File.ReadAllLines(FileName, Encoding);
+			if (Lines == null && System.IO.File.Exists(FileName))
+			{
+				Lines = System.IO.File.ReadAllLines(FileName, Encoding);
+			}
+			else
+			{
+				//HACKY, needs re-writing....
+				IsB3D = true;
+			}
 			// parse lines
 			MeshBuilder Builder = new MeshBuilder();
 			Vector3[] Normals = new Vector3[4];

@@ -126,7 +126,14 @@ namespace OpenBve {
 			World.CameraMode = World.CameraViewMode.Interior;
 			// load route
 			bool IsRW = string.Equals(System.IO.Path.GetExtension(CurrentRouteFile), ".rw", StringComparison.OrdinalIgnoreCase);
-			CsvRwRouteParser.ParseRoute(CurrentRouteFile, IsRW, CurrentRouteEncoding, Application.StartupPath, ObjectFolder, SoundFolder, false);
+			if (!CurrentRouteFile.EndsWith(".dat", StringComparison.InvariantCultureIgnoreCase))
+			{
+				CsvRwRouteParser.ParseRoute(CurrentRouteFile, IsRW, CurrentRouteEncoding, Application.StartupPath, ObjectFolder, SoundFolder, false);
+			}
+			else
+			{
+				MechanikRouteParser.ParseRoute(CurrentRouteFile);
+			}
 			System.Threading.Thread.Sleep(1); if (Cancel) return;
 			Game.CalculateSeaLevelConstants();
 			RouteProgress = 1.0;
