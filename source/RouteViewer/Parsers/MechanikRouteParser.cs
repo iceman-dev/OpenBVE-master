@@ -270,17 +270,25 @@ namespace OpenBve
 						{
 							sortedPoints.Add(points[k]);
 						}
-
-						
 						trackPosition /= 200.0;
-						
-						if (Arguments[0].ToLowerInvariant() == "#t_prz")
+
+						switch (Arguments[0].ToLowerInvariant())
 						{
-							Idx = CreateHorizontalObject(tDat, sortedPoints, false, sx, sy, textureIndex, true);
-						}
-						else
-						{
-							Idx = CreateHorizontalObject(tDat, sortedPoints, false, sx, sy, textureIndex, false);
+							case "#t_prz":
+								//FREE, transparent
+								Idx = CreateHorizontalObject(tDat, sortedPoints, firstPoint, scaleFactor, sx, sy, textureIndex, true, false);
+								break;
+							case "#t_p":
+								//HORIZONTAL, no transparency
+								Idx = CreateHorizontalObject(tDat, sortedPoints, firstPoint, scaleFactor, sx, sy, textureIndex, false, true);
+								break;
+							case "#t":
+								Idx = CreateHorizontalObject(tDat, sortedPoints, firstPoint, scaleFactor, sx, sy, textureIndex, false, false);
+								break;
+							default:
+								//never hit
+								Idx = -1;
+								break;
 						}
 						
 						blockIndex = currentRouteData.FindBlock(trackPosition);
@@ -343,7 +351,7 @@ namespace OpenBve
 			Array.Resize<TrackManager.TrackElement>(ref TrackManager.CurrentTrack.Elements, CurrentTrackLength);
 		}
 
-		private static int CreateHorizontalObject(string TdatPath, List<Vector3> Points, bool Reversed, double sx, double sy, int textureIndex, bool transparent)
+		private static int CreateHorizontalObject(string TdatPath, List<Vector3> Points, int firstPoint, double scaleFactor, double sx, double sy, int textureIndex, bool transparent, bool horizontal)
 		{
 			MechanikTexture t = new MechanikTexture();
 			for (int i = 0; i < AvailableTextures.Count; i++)
@@ -358,10 +366,39 @@ namespace OpenBve
 			o.TextureIndex = textureIndex;
 			List<string> s = new List<string>();
 			s.Add("[MeshBuilder]");
+			Vector3 min = new Vector3(Points[0].X, Points[0].Y, Points[0].Z);
+			Vector3 max = new Vector3(Points[0].X, Points[0].Y, Points[0].Z);
 			for (int i = 0; i < Points.Count; i++)
 			{
 				s.Add("Vertex "+ Points[i]);
+				if (Points[i].X > min.X)
+				{
+					min.X = Points[i].X;
+					
+				}
+				if (Points[i].X < max.X)
+				{
+					max.X = Points[i].X;
+				}
+				if (Points[i].Y > min.Y)
+				{
+					min.Y = Points[i].Y;
+				}
+				if (Points[i].Y < max.Y)
+				{
+					max.Y = Points[i].Y;
+				}
+				if (Points[i].Z > min.Z)
+				{
+					min.Z = Points[i].Z;
+				}
+				if (Points[i].Z < max.Z)
+				{
+					max.Z = Points[i].Z;
+				}
 			}
+			//size of face
+			Vector3 faceSize = max - min;
 			string f = "Face2 ";
 			for (int i = 0; i < Points.Count; i++)
 			{
@@ -371,21 +408,27 @@ namespace OpenBve
 			s.Add("[Texture]");
 			s.Add("Load " + t.Texture);
 			//TEMP
+			double tc1 = sx, tc2 = sy;
+			if (horizontal)
+			{
+				tc1 = faceSize.X / (t.Width * sx * scaleFactor);
+				tc2 = faceSize.Z / (t.Height * sy * scaleFactor);
+			}
 			for (int i = 0; i < Points.Count; i++)
 			{
 				switch (i)
 				{
 					case 0:
-						s.Add("Coordinates 0,0," + sy);
+						s.Add("Coordinates 0,0," + tc2);
 						break;
 					case 1:
 						s.Add("Coordinates 1,0,0");
 						break;
 					case 2:
-						s.Add("Coordinates 2," + sx +",0");
+						s.Add("Coordinates 2," + tc1 +",0");
 						break;
 					case 3:
-						s.Add("Coordinates 3," + sx + "," + sy);
+						s.Add("Coordinates 3," + tc1 + "," + tc2);
 						break;
 				}
 			}
