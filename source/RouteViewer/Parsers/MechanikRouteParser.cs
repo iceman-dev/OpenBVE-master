@@ -4,6 +4,7 @@ using OpenBveApi.Math;
 using OpenBveApi.Colors;
 using System.Drawing;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace OpenBve
 {
@@ -82,12 +83,13 @@ namespace OpenBve
 				if (j != -1)
 				{
 					//Split out comments
-					routeLines[i] = routeLines[i].Substring(j, routeLines[i].Length - 1);
+					routeLines[i] = routeLines[i].Substring(j, routeLines[i].Length - j);
 				}
 				if (String.IsNullOrWhiteSpace(routeLines[i]))
 				{
 					continue;
 				}
+				routeLines[i] = Regex.Replace(routeLines[i], @"\s+", " ");
 				string[] Arguments = routeLines[i].Trim().Split(null);
 				double trackPosition, scaleFactor;
 				int Idx, blockIndex, textureIndex;
@@ -324,7 +326,8 @@ namespace OpenBve
 				{
 					Array.Resize<TrackManager.TrackElement>(ref TrackManager.CurrentTrack.Elements, TrackManager.CurrentTrack.Elements.Length << 1);
 				}
-
+				CurrentTrackLength++;
+				
 				double TrackYaw = Math.Atan2(Direction.X, Direction.Y);
 				double TrackPitch = Math.Atan(0.0); //Not yet implemented
 				World.Transformation GroundTransformation = new World.Transformation(TrackYaw, 0.0, 0.0);
@@ -335,6 +338,7 @@ namespace OpenBve
 					World.Transformation RailTransformation = new World.Transformation(TrackTransformation, 0.0, 0.0, 0.0);
 					ObjectManager.CreateObject(AvailableObjects[currentRouteData.Blocks[i].Objects[j].objectIndex].Object, new Vector3(), RailTransformation, NullTransformation, false, StartingDistance, EndingDistance, 25, StartingDistance);
 				}
+				TrackManager.CurrentTrack.Elements[n] = WorldTrackElement;
 			}
 			Array.Resize<TrackManager.TrackElement>(ref TrackManager.CurrentTrack.Elements, CurrentTrackLength);
 		}
@@ -409,6 +413,7 @@ namespace OpenBve
 				if (AvailableTextures[i].TextureIndex == textureIndex)
 				{
 					t = AvailableTextures[i];
+					break;
 				}
 			}
 			MechanikObject o = new MechanikObject();
@@ -485,7 +490,7 @@ namespace OpenBve
 				{
 					continue;
 				}
-				textureLines[i] = textureLines[i].Replace('\t', ' ');
+				textureLines[i] = Regex.Replace(textureLines[i], @"\s+", " ");
 				int k = 0;
 				string s = null;
 				for (int l = 0; l < textureLines[i].Length; l++)
