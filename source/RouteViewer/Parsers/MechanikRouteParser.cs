@@ -51,11 +51,31 @@ namespace OpenBve
 				this.Blocks.Add(new Block(TrackPosition));
 				return this.Blocks.Count - 1;
 			}
+
+			internal void CreateMissingBlocks()
+			{
+				for (int i = 0; i < this.Blocks.Count -1; i++)
+				{
+					while (true)
+					{
+						if (this.Blocks[i + 1].StartingTrackPosition - this.Blocks[i].StartingTrackPosition > 25)
+						{
+							this.Blocks.Insert(i + 1, new Block(this.Blocks[i].StartingTrackPosition + 25));
+							i++;
+						}
+						else
+						{
+							break;
+						}
+					}
+				}
+			}
 		}
 
 		private static RouteData currentRouteData;
 		private static List<MechanikObject> AvailableObjects = new List<MechanikObject>();
 		private static List<MechanikTexture> AvailableTextures = new List<MechanikTexture>();
+		private static string RouteFolder;
 
 		internal static void ParseRoute(string routeFile)
 		{
@@ -67,8 +87,8 @@ namespace OpenBve
 			AvailableTextures = new List<MechanikTexture>();
 			currentRouteData = new RouteData();
 			//Load texture list
-			string Folder = System.IO.Path.GetDirectoryName(routeFile);
-			string tDat = OpenBveApi.Path.CombineFile(Folder, "tekstury.dat");
+			RouteFolder = System.IO.Path.GetDirectoryName(routeFile);
+			string tDat = OpenBveApi.Path.CombineFile(RouteFolder, "tekstury.dat");
 			if (!System.IO.File.Exists(tDat))
 			{
 				return;
@@ -299,11 +319,20 @@ namespace OpenBve
 
 			}
 			currentRouteData.Blocks.Sort((x, y) => x.StartingTrackPosition.CompareTo(y.StartingTrackPosition));
+			currentRouteData.CreateMissingBlocks();
 			ProcessRoute();
 		}
 
 		private static void ProcessRoute()
 		{
+			int bt = -1;
+			string f = OpenBveApi.Path.CombineFile(RouteFolder, "obloczki.bmp");
+			if (System.IO.File.Exists(f))
+			{
+				bt = TextureManager.RegisterTexture(f, new Color24(0, 0, 0), 0, TextureManager.TextureWrapMode.Repeat, TextureManager.TextureWrapMode.ClampToEdge, false);
+			}
+			World.CurrentBackground = new World.Background(bt, 2, false);
+			World.TargetBackground = World.CurrentBackground;
 			Vector3 Position = new Vector3(0.0, 0.0, 0.0);
 			Vector2 Direction = new Vector2(0.0, 1.0);
 			TrackManager.CurrentTrack = new TrackManager.Track();
@@ -317,38 +346,58 @@ namespace OpenBve
 			int PreviousFogEvent = -1;
 			for (int i = 0; i < currentRouteData.Blocks.Count; i++)
 			{
-				double StartingDistance = currentRouteData.Blocks[i].StartingTrackPosition;
-				double EndingDistance = currentRouteData.Blocks[i].StartingTrackPosition + 1;
-				int n;
-				
-				if (i + 1 < currentRouteData.Blocks.Count)
-				{
-					EndingDistance = currentRouteData.Blocks[i + 1].StartingTrackPosition;
-				}
+				double StartingDistance = (double)i * 25;
+				double EndingDistance = StartingDistance + 25;	
 				// normalize
 				World.Normalize(ref Direction.X, ref Direction.Y);
 				// track
 				TrackManager.TrackElement WorldTrackElement = new TrackManager.TrackElement(currentRouteData.Blocks[i].StartingTrackPosition);
-				n = CurrentTrackLength;
+
+				int n = CurrentTrackLength;
 				if (n >= TrackManager.CurrentTrack.Elements.Length)
 				{
 					Array.Resize<TrackManager.TrackElement>(ref TrackManager.CurrentTrack.Elements, TrackManager.CurrentTrack.Elements.Length << 1);
 				}
+				TrackManager.CurrentTrack.Elements[n] = WorldTrackElement;
+				TrackManager.CurrentTrack.Elements[n].WorldPosition = Position;
+				TrackManager.CurrentTrack.Elements[n].WorldDirection = Vector3.GetVector3(Direction, 0);
+				TrackManager.CurrentTrack.Elements[n].WorldSide = new Vector3(Direction.Y, 0.0, -Direction.X);
+				TrackManager.CurrentTrack.Elements[n].WorldUp = Vector3.Cross(TrackManager.CurrentTrack.Elements[n].WorldDirection, TrackManager.CurrentTrack.Elements[n].WorldSide);
 				CurrentTrackLength++;
 				
 				double TrackYaw = Math.Atan2(Direction.X, Direction.Y);
-				double TrackPitch = Math.Atan(0.0); //Not yet implemented
 				World.Transformation GroundTransformation = new World.Transformation(TrackYaw, 0.0, 0.0);
-				World.Transformation TrackTransformation = new World.Transformation(TrackYaw, TrackPitch, 0.0);
+				World.Transformation TrackTransformation = new World.Transformation(TrackYaw, 0.0, 0.0);
 				World.Transformation NullTransformation = new World.Transformation(0.0, 0.0, 0.0);
+				// curves
+				double a = 0.0;
+				double c = 25.0;
+				double h = 0.0;
+				if (WorldTrackElement.CurveRadius != 0.0)
+				{
+					double d = 25.0;
+					double r = WorldTrackElement.CurveRadius;
+					double b = d / Math.Abs(r);
+					c = Math.Sqrt(2.0 * r * r * (1.0 - Math.Cos(b)));
+					a = 0.5 * (double)Math.Sign(r) * b;
+					World.Rotate(ref Direction, Math.Cos(-a), Math.Sin(-a));
+				}
 				for (int j = 0; j < currentRouteData.Blocks[i].Objects.Count; j++)
 				{
 					World.Transformation RailTransformation = new World.Transformation(TrackTransformation, 0.0, 0.0, 0.0);
-					ObjectManager.CreateObject(AvailableObjects[currentRouteData.Blocks[i].Objects[j].objectIndex].Object, new Vector3(), RailTransformation, NullTransformation, false, StartingDistance, EndingDistance, 25, StartingDistance);
+					ObjectManager.CreateObject(AvailableObjects[currentRouteData.Blocks[i].Objects[j].objectIndex].Object, Position, NullTransformation, NullTransformation, ObjectManager.ObjectDisposalMode.Mechanik, StartingDistance, EndingDistance, 100, StartingDistance);
 				}
-				TrackManager.CurrentTrack.Elements[n] = WorldTrackElement;
+				// finalize block
+				Position.X += Direction.X * c;
+				Position.Y += h;
+				Position.Z += Direction.Y * c;
+				if (a != 0.0)
+				{
+					World.Rotate(ref Direction, Math.Cos(-a), Math.Sin(-a));
+				}
 			}
 			Array.Resize<TrackManager.TrackElement>(ref TrackManager.CurrentTrack.Elements, CurrentTrackLength);
+			TrackManager.CurrentTrack.Elements[CurrentTrackLength -1].Events = new TrackManager.GeneralEvent[] { new TrackManager.TrackEndEvent(25) };
 		}
 
 		private static int CreateHorizontalObject(string TdatPath, List<Vector3> Points, int firstPoint, double scaleFactor, double sx, double sy, int textureIndex, bool transparent, bool horizontal)

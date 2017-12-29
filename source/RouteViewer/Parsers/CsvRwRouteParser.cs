@@ -254,7 +254,7 @@ namespace OpenBve {
 			internal double TrackPosition;
 			internal double BlockInterval;
 			internal double UnitOfSpeed;
-			internal bool AccurateObjectDisposal;
+			internal ObjectManager.ObjectDisposalMode AccurateObjectDisposal;
 			internal bool SignedCant;
 			internal bool FogTransitionMode;
 			internal StructureData Structure;
@@ -275,7 +275,7 @@ namespace OpenBve {
 			string CompatibilityFolder = Program.FileSystem.GetDataFolder("Compatibility");
 			RouteData Data = new RouteData();
 			Data.BlockInterval = 25.0;
-			Data.AccurateObjectDisposal = false;
+			Data.AccurateObjectDisposal = ObjectManager.ObjectDisposalMode.Legacy;
 			Data.FirstUsedBlock = -1;
 			Data.Blocks = new Block[1];
 			Data.Blocks[0] = new Block();
@@ -1143,7 +1143,7 @@ namespace OpenBve {
 												Interface.AddMessage(Interface.MessageType.Error, false, "The specified Mode is not supported in " + Command + " at line " + Expressions[j].Line.ToString(Culture) + ", column " + Expressions[j].Column.ToString(Culture) + " in file " + Expressions[j].File);
 												mode = 0;
 											}
-											Data.AccurateObjectDisposal = mode == 1;
+											Data.AccurateObjectDisposal = (ObjectManager.ObjectDisposalMode)mode;
 										}
 									} break;
 								case "options.enablebvetshacks":
