@@ -260,6 +260,10 @@ namespace OpenBve
 							//Add message
 							continue;
 						}
+						if (firstPoint != 0)
+						{
+							firstPoint -= 1;
+						}
 						double sx;
 						double sy;
 						if (!double.TryParse(Arguments[26], out sx))
@@ -447,6 +451,7 @@ namespace OpenBve
 				}
 			}
 			//size of face
+			//BUG: Doesn't take into account diagonal faces or anything of that nature
 			Vector3 faceSize = max - min;
 			string f = "Face2 ";
 			for (int i = 0; i < Points.Count; i++)
@@ -460,26 +465,55 @@ namespace OpenBve
 			double tc1 = sx, tc2 = sy;
 			if (horizontal)
 			{
-				tc1 = faceSize.X / (t.Width * sx * scaleFactor);
-				tc2 = faceSize.Z / (t.Height * sy * scaleFactor);
+				tc1 = faceSize.X / (t.Width * sy * scaleFactor);
+				tc2 = faceSize.Z / (t.Height * sx * scaleFactor);
+			}
+			else
+			{
+				if (faceSize.X == 0)
+				{
+					tc1 = faceSize.Z / (t.Width * sx * scaleFactor);
+					tc2 = faceSize.Y / (t.Height * sy * scaleFactor);
+				}
+				else if (faceSize.Y == 0)
+				{
+					//BUG: Not sure why this needs negating at the minute.....
+					tc1 = -(faceSize.X / (t.Width * sx * scaleFactor));
+					tc2 = faceSize.Z / (t.Height * sy * scaleFactor);
+				}
+				else if (faceSize.Z == 0)
+				{
+					tc1 = faceSize.X / (t.Width * sx * scaleFactor);
+					tc2 = faceSize.Y / (t.Height * sy * scaleFactor);
+				}
+			}
+			if (t.Texture.ToLowerInvariant() == "pta.bmp")
+			{
+				int b = 0;
+				b++;
 			}
 			for (int i = 0; i < Points.Count; i++)
 			{
+				if (firstPoint >= Points.Count)
+				{
+					firstPoint = 0;
+				}
 				switch (i)
 				{
 					case 0:
-						s.Add("Coordinates 0,0," + tc2);
+						s.Add("Coordinates " + firstPoint + ",0,0");
 						break;
 					case 1:
-						s.Add("Coordinates 1,0,0");
+						s.Add("Coordinates "+ firstPoint + ",0," + tc2);
 						break;
 					case 2:
-						s.Add("Coordinates 2," + tc1 +",0");
+						s.Add("Coordinates " + firstPoint + "," + tc1 +"," + tc2);
 						break;
 					case 3:
-						s.Add("Coordinates 3," + tc1 + "," + tc2);
+						s.Add("Coordinates " + firstPoint + "," + tc1 + ",0");
 						break;
 				}
+				firstPoint++;
 			}
 			if (transparent)
 			{
