@@ -91,7 +91,16 @@ namespace OpenBve
 			string tDat = OpenBveApi.Path.CombineFile(RouteFolder, "tekstury.dat");
 			if (!System.IO.File.Exists(tDat))
 			{
-				return;
+				/*
+				 * TODO: Separate into a function
+				 * Various Mechanik routes use custom hardcoded DAT paths
+				 * Thus, we will need to keep a search list for both the trasa and tekstury files
+				 */
+				tDat = OpenBveApi.Path.CombineFile(RouteFolder, "s80_text.dat"); //S80 U-Bahn
+				if (!System.IO.File.Exists(tDat))
+				{
+					return;
+				}
 			}
 			LoadTextureList(tDat);
 			double previousTrackPosition = 0;
@@ -487,10 +496,20 @@ namespace OpenBve
 					tc2 = faceSize.Y / (t.Height * sy * scaleFactor);
 				}
 			}
-			if (t.Texture.ToLowerInvariant() == "pta.bmp")
+
+			/*
+			 * BUG: Not sure this is right, but it makes a bunch more stuff work OK
+			 */
+			double tc3 = 0, tc4 = 0;
+			if (Math.Abs(tc1) != tc1)
 			{
-				int b = 0;
-				b++;
+				tc3 = tc1;
+				tc1 = 0;
+			}
+			if (Math.Abs(tc2) != tc2)
+			{
+				tc4 = tc2;
+				tc2 = 0;
 			}
 			for (int i = 0; i < Points.Count; i++)
 			{
@@ -501,16 +520,16 @@ namespace OpenBve
 				switch (i)
 				{
 					case 0:
-						s.Add("Coordinates " + firstPoint + ",0,0");
+						s.Add("Coordinates " + firstPoint + ","+ tc3 +"," + tc2);
 						break;
 					case 1:
-						s.Add("Coordinates "+ firstPoint + ",0," + tc2);
+						s.Add("Coordinates "+ firstPoint + "," + tc3 +"," + tc4);
 						break;
 					case 2:
-						s.Add("Coordinates " + firstPoint + "," + tc1 +"," + tc2);
+						s.Add("Coordinates " + firstPoint + "," + tc1 +"," + tc4);
 						break;
 					case 3:
-						s.Add("Coordinates " + firstPoint + "," + tc1 + ",0");
+						s.Add("Coordinates " + firstPoint + "," + tc1 + "," + tc2);
 						break;
 				}
 				firstPoint++;
