@@ -561,6 +561,11 @@ namespace OpenBve
                     for (int j = 0; j < Face.Vertices.Length; j++)
                     {
                         GL.Normal3(Face.Vertices[j].Normal.X, Face.Vertices[j].Normal.Y, Face.Vertices[j].Normal.Z);
+	                    if (Vertices[Face.Vertices[j].Index].VertexColor != null)
+	                    {
+		                    Color128 c = (Color128)Vertices[Face.Vertices[j].Index].VertexColor;
+							GL.Color3(c.R, c.G, c.B);
+	                    }
                         GL.Vertex3((float)(Vertices[Face.Vertices[j].Index].Coordinates.X - CameraX), (float)(Vertices[Face.Vertices[j].Index].Coordinates.Y - CameraY), (float)(Vertices[Face.Vertices[j].Index].Coordinates.Z - CameraZ));
                     }
                 }

@@ -17,28 +17,34 @@ namespace OpenBve {
 		internal struct Vertex {
 			internal Vector3 Coordinates;
 			internal Vector2 TextureCoordinates;
+			internal Color128? VertexColor;
 			internal Vertex(double X, double Y, double Z) {
 				this.Coordinates = new Vector3(X, Y, Z);
 				this.TextureCoordinates = new Vector2(0.0f, 0.0f);
+				this.VertexColor = null;
 			}
 			internal Vertex(Vector3 Coordinates, Vector2 TextureCoordinates) {
 				this.Coordinates = Coordinates;
 				this.TextureCoordinates = TextureCoordinates;
+				this.VertexColor = null;
 			}
 			internal static bool Equals(Vertex A, Vertex B) {
 				if (A.Coordinates.X != B.Coordinates.X | A.Coordinates.Y != B.Coordinates.Y | A.Coordinates.Z != B.Coordinates.Z) return false;
 				if (A.TextureCoordinates.X != B.TextureCoordinates.X | A.TextureCoordinates.Y != B.TextureCoordinates.Y) return false;
+				if (A.VertexColor != B.VertexColor) return false;
 				return true;
 			}
 			// operators
 			public static bool operator ==(Vertex A, Vertex B) {
 				if (A.Coordinates.X != B.Coordinates.X | A.Coordinates.Y != B.Coordinates.Y | A.Coordinates.Z != B.Coordinates.Z) return false;
 				if (A.TextureCoordinates.X != B.TextureCoordinates.X | A.TextureCoordinates.Y != B.TextureCoordinates.Y) return false;
+				if (A.VertexColor != B.VertexColor) return false;
 				return true;
 			}
 			public static bool operator !=(Vertex A, Vertex B) {
 				if (A.Coordinates.X != B.Coordinates.X | A.Coordinates.Y != B.Coordinates.Y | A.Coordinates.Z != B.Coordinates.Z) return true;
 				if (A.TextureCoordinates.X != B.TextureCoordinates.X | A.TextureCoordinates.Y != B.TextureCoordinates.Y) return true;
+				if (A.VertexColor != B.VertexColor) return false;
 				return false;
 			}
 			public override int GetHashCode() {
