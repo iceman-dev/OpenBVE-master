@@ -132,7 +132,7 @@ namespace OpenBve {
 			new Template("MeshVertexColors", new string[] { "DWORD","VertexColor[0]"}),
 			new Template("MeshNormals", new string[] { "DWORD", "Vector[0]", "DWORD", "MeshFace[2]" }),
 			// Index , ColorRGBA
-			new Template("VertexColor", new string[] { "DWORD", "float", "float", "float", "float", "float" }),
+			new Template("VertexColor", new string[] { "DWORD", "ColorRGBA" }),
 			//Root frame around the model itself
 			new Template("Frame Root", new string[] { "[...]" }),
 			//Presumably appears around each Mesh (??), Blender exported models
@@ -157,13 +157,6 @@ namespace OpenBve {
 
 		// get template
 		private static Template GetTemplate(string Name, bool binary) {
-			if (binary && Name.ToLowerInvariant() == "meshvertexcolors")
-			{
-				/*
-				 * Only have one variant on this in binary, and can't get it to work quite right at the minute, so disable it....
-				 */
-				return new Template(Name, new string[] { "[???]" });
-			}
 			for (int i = 0; i < Templates.Length; i++) {
 				if (Templates[i].Name == Name) {
 					return Templates[i];
@@ -1967,7 +1960,7 @@ namespace OpenBve {
 										}
 										else if (!(g.Data[1] is Structure[]))
 										{
-											Interface.AddMessage(Interface.MessageType.Error, false, "vertexColors[nVertexColors] is expected to be a Color array in MeshVertexColors in Mesh in x object file " + FileName);
+											Interface.AddMessage(Interface.MessageType.Error, false, "vertexColors[nVertexColors] is expected to be a Structure array in MeshVertexColors in Mesh in x object file " + FileName);
 											return false;
 										}
 
@@ -1979,26 +1972,43 @@ namespace OpenBve {
 												//Message: Expected to be vertex index
 												continue;
 											}
-											if (!(structures[k].Data[1] is double))
-											{
-												//Message: Expected to be R
-												continue;
-											}
-											if (!(structures[k].Data[2] is double))
-											{
-												//Message: Expected to be G
-												continue;
-											}
-											if (!(structures[k].Data[3] is double))
-											{
-												//Message: Expected to be B
-												continue;
-											}
-
 											int idx = (int)structures[k].Data[0];
-											double red = (double) structures[k].Data[1], green = (double) structures[k].Data[2], blue = (double) structures[k].Data[3];
+											if (!(structures[k].Data[1] is Structure))
+											{
+												Interface.AddMessage(Interface.MessageType.Error, false, "vertexColors[" + idx + "] is expected to be a ColorRGBA array in MeshVertexColors in Mesh in x object file " + FileName);
+												continue;
+											}
 
-											OpenBveApi.Colors.Color128 c = new Color128((float)red, (float)green, (float)blue);
+											Structure colorStructure = structures[k].Data[1] as Structure;
+											if (colorStructure.Data.Length != 4)
+											{
+												Interface.AddMessage(Interface.MessageType.Error, false, "vertexColors[" + idx + "] is expected to have 4 arguments in MeshVertexColors in Mesh in x object file " + FileName);
+												continue;
+											}
+											if (!(colorStructure.Data[0] is double))
+											{
+												Interface.AddMessage(Interface.MessageType.Error, false, "R is expected to be a float in MeshVertexColors[" + k.ToString(Culture) + "] in in Mesh in x object file " + FileName);
+												continue;
+											}
+											if (!(colorStructure.Data[1] is double))
+											{
+												Interface.AddMessage(Interface.MessageType.Error, false, "G is expected to be a float in MeshVertexColors[" + k.ToString(Culture) + "] in in Mesh in x object file " + FileName);
+												continue;
+											}
+											if (!(colorStructure.Data[2] is double))
+											{
+												Interface.AddMessage(Interface.MessageType.Error, false, "B is expected to be a float in MeshVertexColors[" + k.ToString(Culture) + "] in in Mesh in x object file " + FileName);
+												continue;
+											}
+											if (!(colorStructure.Data[3] is double))
+											{
+												Interface.AddMessage(Interface.MessageType.Error, false, "A is expected to be a float in MeshVertexColors[" + k.ToString(Culture) + "] in in Mesh in x object file " + FileName);
+												continue;
+											}
+											
+											double red = (double)colorStructure.Data[0], green = (double)colorStructure.Data[1], blue = (double)colorStructure.Data[2], alpha = (double)colorStructure.Data[3];
+
+											OpenBveApi.Colors.Color128 c = new Color128((float)red, (float)green, (float)blue, (float)alpha);
 											Vertices[idx].VertexColor = c;
 										}
 										break;
